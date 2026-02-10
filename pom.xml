@@ -7,7 +7,7 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>fantasyia</name>
-    <description>Fantasy Baseball Auction App</description>
+    <description>Fantasy Baseball Dynasty League App</description>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
