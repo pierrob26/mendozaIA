@@ -18,7 +18,7 @@ public class UserAccount {
     private String password;
 
     @Column(nullable = false)
-    private String role = "USER"; // Single role for simplicity
+    private String role; // Role to be selected during registration
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

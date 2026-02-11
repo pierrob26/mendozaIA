@@ -24,6 +24,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests((authz) -> authz
                 .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/auction/**").hasRole("COMMISSIONER")
                 .anyRequest().authenticated()
             )
             .formLogin((form) -> form

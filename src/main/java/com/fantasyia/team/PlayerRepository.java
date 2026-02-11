@@ -14,6 +14,9 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     
     List<Player> findByOwnerIdAndPosition(Long ownerId, String position);
     
+    // Find free agents (players without contracts)
+    List<Player> findByOwnerIdIsNull();
+    
     @Query("SELECT p FROM Player p WHERE p.ownerId = :ownerId " +
            "AND (:position IS NULL OR :position = '' OR p.position = :position) " +
            "AND (:minContract IS NULL OR p.contractLength >= :minContract) " +

@@ -103,8 +103,8 @@
                     <td th:text="${player.name}">Player Name</td>
                     <td th:text="${player.position}">Position</td>
                     <td th:text="${player.team}">MLB Team</td>
-                    <td th:text="${player.contractLength} + ' years'">Contract Length</td>
-                    <td th:text="'$' + ${#numbers.formatDecimal(player.contractAmount, 0, 2)}">Contract Amount</td>
+                    <td th:text="${player.contractLength != null ? player.contractLength + ' years' : 'Free Agent'}">Contract Length</td>
+                    <td th:text="${player.contractAmount != null ? '$' + #numbers.formatDecimal(player.contractAmount, 0, 2) : 'No Contract'}">Contract Amount</td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(players)}">
                     <td colspan="5" style="text-align: center; font-style: italic;">No players found with the current filters.</td>

@@ -30,8 +30,15 @@ public class RegistrationController {
             model.addAttribute("error", "Username already exists");
             return "register";
         }
+        
+        // Validate role
+        if (user.getRole() == null || 
+            (!user.getRole().equals("MEMBER") && !user.getRole().equals("COMMISSIONER"))) {
+            model.addAttribute("error", "Please select a valid role");
+            return "register";
+        }
+        
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("USER");
         repo.save(user);
         return "redirect:/login";
     }

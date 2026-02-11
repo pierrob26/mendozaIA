@@ -28,7 +28,7 @@ public class DataInitializer implements CommandLineRunner {
             UserAccount testUser = new UserAccount();
             testUser.setUsername("testuser");
             testUser.setPassword(passwordEncoder.encode("password"));
-            testUser.setRole("USER");
+            testUser.setRole("MEMBER");
             userAccountRepository.save(testUser);
             
             // Add some sample baseball players for the test user
@@ -52,6 +52,33 @@ public class DataInitializer implements CommandLineRunner {
             for (Player player : samplePlayers) {
                 playerRepository.save(player);
             }
+            
+            // Add some free agents (players without contracts) for auction testing
+            Player[] freeAgents = {
+                new Player("Mike Trout", "OF", "Los Angeles Angels", 0, 0.0, null),
+                new Player("Aaron Judge", "OF", "New York Yankees", 0, 0.0, null),
+                new Player("Freddie Freeman", "1B", "Los Angeles Dodgers", 0, 0.0, null),
+                new Player("Max Scherzer", "SP", "New York Mets", 0, 0.0, null),
+                new Player("Nolan Arenado", "3B", "St. Louis Cardinals", 0, 0.0, null),
+                new Player("Trea Turner", "SS", "Philadelphia Phillies", 0, 0.0, null),
+                new Player("Yordan Alvarez", "DH", "Houston Astros", 0, 0.0, null),
+                new Player("Shane Bieber", "SP", "Cleveland Guardians", 0, 0.0, null),
+                new Player("J.T. Realmuto", "C", "Philadelphia Phillies", 0, 0.0, null),
+                new Player("Edwin Diaz", "RP", "New York Mets", 0, 0.0, null)
+            };
+            
+            for (Player freeAgent : freeAgents) {
+                playerRepository.save(freeAgent);
+            }
+        }
+        
+        // Create a test commissioner if it doesn't exist
+        if (!userAccountRepository.existsByUsername("commissioner")) {
+            UserAccount commissioner = new UserAccount();
+            commissioner.setUsername("commissioner");
+            commissioner.setPassword(passwordEncoder.encode("password"));
+            commissioner.setRole("COMMISSIONER");
+            userAccountRepository.save(commissioner);
         }
     }
 }

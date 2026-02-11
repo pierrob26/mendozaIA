@@ -18,11 +18,11 @@ public class Player {
     @Column(nullable = false)
     private String team; // MLB team
 
-    @Column(nullable = false)
-    private Integer contractLength; // in years
+    @Column
+    private Integer contractLength; // in years (null for free agents)
 
-    @Column(nullable = false)
-    private Double contractAmount; // salary amount
+    @Column
+    private Double contractAmount; // salary amount (null for free agents)
 
     @Column
     private Long ownerId; // foreign key to UserAccount

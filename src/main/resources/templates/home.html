@@ -7,7 +7,19 @@
 </head>
 <body>
 <h1>Dynasty Mendoza Baseball League</h1>
-<p>Welcome to the Mendoza Baseball League. <a th:href="@{/login}">Login</a></p>
-<p><a th:href="@{/team}">View My Baseball Team</a></p>
+<div th:if="${currentUser != null}">
+    <p>Welcome, <span th:text="${currentUser.username}">User</span>!</p>
+    <p><a th:href="@{/team}">View My Baseball Team</a></p>
+    
+    <!-- Commissioner-only features -->
+    <div th:if="${currentUser.role == 'COMMISSIONER'}">
+        <p><a th:href="@{/auction/manage}" style="background: #e74c3c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">Manage Player Auctions</a></p>
+    </div>
+    
+    <p><a th:href="@{/logout}">Logout</a></p>
+</div>
+<div th:if="${currentUser == null}">
+    <p>Welcome to the Mendoza Baseball League. <a th:href="@{/login}">Login</a></p>
+</div>
 </body>
 </html>
