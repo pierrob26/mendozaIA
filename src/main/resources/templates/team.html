@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Team - FantasyIA</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css"/>
+    <style>
+        .filter-row, .form-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .filter-group, .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label, .form-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .players-table th, .players-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="team-container">
+        <h1>My Fantasy Baseball Team</h1>
+        <p><a th:href="@{/}">← Back to Home</a></p>
+
+        <!-- Filter Form -->
+        <div class="filter-form">
+            <h3>Filter Players</h3>
+            <form th:action="@{/team}" method="get">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="position">Position:</label>
+                        <select id="position" name="position">
+                            <option value="">All Positions</option>
+                            <option th:value="'C'" th:selected="${selectedPosition == 'C'}">Catcher (C)</option>
+                            <option th:value="'1B'" th:selected="${selectedPosition == '1B'}">First Base (1B)</option>
+                            <option th:value="'2B'" th:selected="${selectedPosition == '2B'}">Second Base (2B)</option>
+                            <option th:value="'3B'" th:selected="${selectedPosition == '3B'}">Third Base (3B)</option>
+                            <option th:value="'SS'" th:selected="${selectedPosition == 'SS'}">Shortstop (SS)</option>
+                            <option th:value="'OF'" th:selected="${selectedPosition == 'OF'}">Outfield (OF)</option>
+                            <option th:value="'DH'" th:selected="${selectedPosition == 'DH'}">Designated Hitter (DH)</option>
+                            <option th:value="'SP'" th:selected="${selectedPosition == 'SP'}">Starting Pitcher (SP)</option>
+                            <option th:value="'RP'" th:selected="${selectedPosition == 'RP'}">Relief Pitcher (RP)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="minContract">Min Contract Length:</label>
+                        <input type="number" id="minContract" name="minContract" th:value="${minContract}" placeholder="Years">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="maxContract">Max Contract Length:</label>
+                        <input type="number" id="maxContract" name="maxContract" th:value="${maxContract}" placeholder="Years">
+                    </div>
+                </div>
+                
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="minSalary">Min Salary:</label>
+                        <input type="number" step="0.01" id="minSalary" name="minSalary" th:value="${minSalary}" placeholder="$">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="maxSalary">Max Salary:</label>
+                        <input type="number" step="0.01" id="maxSalary" name="maxSalary" th:value="${maxSalary}" placeholder="$">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <button type="submit">Apply Filters</button>
+                        <a th:href="@{/team}" style="margin-top: 5px;">Clear Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Players Table -->
+        <table class="players-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>MLB Team</th>
+                    <th>Contract Length</th>
+                    <th>Contract Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="player : ${players}">
+                    <td th:text="${player.name}">Player Name</td>
+                    <td th:text="${player.position}">Position</td>
+                    <td th:text="${player.team}">MLB Team</td>
+                    <td th:text="${player.contractLength} + ' years'">Contract Length</td>
+                    <td th:text="'$' + ${#numbers.formatDecimal(player.contractAmount, 0, 2)}">Contract Amount</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(players)}">
+                    <td colspan="5" style="text-align: center; font-style: italic;">No players found with the current filters.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Add Player Form -->
+        <div class="add-player-form">
+            <h3>Add New Player</h3>
+            <form th:action="@{/team/add-player}" method="post">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Player Name:</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="playerPosition">Position:</label>
+                        <select id="playerPosition" name="position" required>
+                            <option value="C">Catcher (C)</option>
+                            <option value="1B">First Base (1B)</option>
+                            <option value="2B">Second Base (2B)</option>
+                            <option value="3B">Third Base (3B)</option>
+                            <option value="SS">Shortstop (SS)</option>
+                            <option value="OF">Outfield (OF)</option>
+                            <option value="DH">Designated Hitter (DH)</option>
+                            <option value="SP">Starting Pitcher (SP)</option>
+                            <option value="RP">Relief Pitcher (RP)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="playerTeam">MLB Team:</label>
+                        <select id="playerTeam" name="team" required>
+                            <option value="">Select a team</option>
+                            <option value="Arizona Diamondbacks">Arizona Diamondbacks</option>
+                            <option value="Atlanta Braves">Atlanta Braves</option>
+                            <option value="Baltimore Orioles">Baltimore Orioles</option>
+                            <option value="Boston Red Sox">Boston Red Sox</option>
+                            <option value="Chicago Cubs">Chicago Cubs</option>
+                            <option value="Chicago White Sox">Chicago White Sox</option>
+                            <option value="Cincinnati Reds">Cincinnati Reds</option>
+                            <option value="Cleveland Guardians">Cleveland Guardians</option>
+                            <option value="Colorado Rockies">Colorado Rockies</option>
+                            <option value="Detroit Tigers">Detroit Tigers</option>
+                            <option value="Houston Astros">Houston Astros</option>
+                            <option value="Kansas City Royals">Kansas City Royals</option>
+                            <option value="Los Angeles Angels">Los Angeles Angels</option>
+                            <option value="Los Angeles Dodgers">Los Angeles Dodgers</option>
+                            <option value="Miami Marlins">Miami Marlins</option>
+                            <option value="Milwaukee Brewers">Milwaukee Brewers</option>
+                            <option value="Minnesota Twins">Minnesota Twins</option>
+                            <option value="New York Mets">New York Mets</option>
+                            <option value="New York Yankees">New York Yankees</option>
+                            <option value="Oakland Athletics">Oakland Athletics</option>
+                            <option value="Philadelphia Phillies">Philadelphia Phillies</option>
+                            <option value="Pittsburgh Pirates">Pittsburgh Pirates</option>
+                            <option value="San Diego Padres">San Diego Padres</option>
+                            <option value="San Francisco Giants">San Francisco Giants</option>
+                            <option value="Seattle Mariners">Seattle Mariners</option>
+                            <option value="St. Louis Cardinals">St. Louis Cardinals</option>
+                            <option value="Tampa Bay Rays">Tampa Bay Rays</option>
+                            <option value="Texas Rangers">Texas Rangers</option>
+                            <option value="Toronto Blue Jays">Toronto Blue Jays</option>
+                            <option value="Washington Nationals">Washington Nationals</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contractLength">Contract Length (Years):</label>
+                        <input type="number" id="contractLength" name="contractLength" min="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contractAmount">Contract Amount ($):</label>
+                        <select id="contractAmount" name="contractAmount" required>
+                            <option value="">Select contract amount</option>
+                            <option value="250000">$250,000</option>
+                            <option value="500000">$500,000</option>
+                            <option value="750000">$750,000</option>
+                            <option value="1000000">$1,000,000</option>
+                            <option value="2000000">$2,000,000</option>
+                            <option value="3000000">$3,000,000</option>
+                            <option value="4000000">$4,000,000</option>
+                            <option value="5000000">$5,000,000</option>
+                            <option value="6000000">$6,000,000</option>
+                            <option value="7000000">$7,000,000</option>
+                            <option value="8000000">$8,000,000</option>
+                            <option value="9000000">$9,000,000</option>
+                            <option value="10000000">$10,000,000</option>
+                            <option value="11000000">$11,000,000</option>
+                            <option value="12000000">$12,000,000</option>
+                            <option value="13000000">$13,000,000</option>
+                            <option value="14000000">$14,000,000</option>
+                            <option value="15000000">$15,000,000</option>
+                            <option value="16000000">$16,000,000</option>
+                            <option value="17000000">$17,000,000</option>
+                            <option value="18000000">$18,000,000</option>
+                            <option value="19000000">$19,000,000</option>
+                            <option value="20000000">$20,000,000</option>
+                            <option value="25000000">$25,000,000</option>
+                            <option value="30000000">$30,000,000</option>
+                            <option value="35000000">$35,000,000</option>
+                            <option value="40000000">$40,000,000</option>
+                            <option value="45000000">$45,000,000</option>
+                            <option value="50000000">$50,000,000</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" style="margin-top: 20px;">Add Player</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
