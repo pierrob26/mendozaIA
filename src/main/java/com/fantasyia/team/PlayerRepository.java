@@ -38,12 +38,12 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     // Clear all contracts for all players (make them free agents)
     @Modifying
     @Transactional
-    @Query("UPDATE Player p SET p.contractLength = null, p.contractAmount = null, p.ownerId = null")
+    @Query("UPDATE Player p SET p.contractLength = 0, p.contractAmount = 0.0, p.ownerId = null")
     void clearAllContracts();
     
     // Release specific players to free agency
-    @Modifying
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
-    @Query("UPDATE Player p SET p.contractLength = null, p.contractAmount = null, p.ownerId = null WHERE p.id IN :playerIds")
+    @Query("UPDATE Player p SET p.contractLength = 0, p.contractAmount = 0.0, p.ownerId = null WHERE p.id IN :playerIds")
     void releasePlayersToFreeAgency(@Param("playerIds") List<Long> playerIds);
 }

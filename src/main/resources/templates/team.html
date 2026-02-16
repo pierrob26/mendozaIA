@@ -142,6 +142,8 @@
             const checkedBoxes = document.querySelectorAll('.player-checkbox:checked');
             const count = checkedBoxes.length;
             
+            console.log('Release function called, checked boxes count:', count);
+            
             if (count === 0) {
                 alert('Please select at least one player to release.');
                 return;
@@ -152,12 +154,34 @@
                 return row.cells[1].textContent; // Player name is in the 2nd column (index 1)
             });
             
-            const message = `Are you sure you want to release ${count} player(s) to the auction?\n\nPlayers to be released:\n${playerNames.join('\n')}\n\nThey will be automatically added to the auction for bidding.`;
+            console.log('Players to release:', playerNames);
+            
+            const message = `Are you sure you want to release ${count} player(s)?\n\nPlayers to be released:\n${playerNames.join('\n')}\n\nThey will be replaced with empty roster slots (e.g., "Empty C Slot", "Empty OF Slot").`;
             
             if (confirm(message)) {
-                document.getElementById('releasePlayersForm').submit();
+                console.log('User confirmed, submitting form...');
+                try {
+                    const form = document.getElementById('releasePlayersForm');
+                    if (form) {
+                        form.submit();
+                    } else {
+                        console.error('Form not found!');
+                        alert('Error: Form not found. Please refresh the page and try again.');
+                    }
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    alert('Error submitting form: ' + error.message);
+                }
+            } else {
+                console.log('User cancelled release');
             }
         }
+        
+        // Initialize button state when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, initializing release button...');
+            updateReleaseButton();
+        });
     </script>
 </head>
 <body>
@@ -218,9 +242,9 @@
 
         <!-- Release Players Actions -->
         <div class="admin-actions" style="margin-top: 20px; padding: 15px; background-color: #e6f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
-            <h3 style="margin-top: 0; color: #0056b3;">Release Players to Auction</h3>
+            <h3 style="margin-top: 0; color: #0056b3;">Release Players</h3>
             <p style="font-size: 0.9em; color: #0056b3; margin-bottom: 15px;">
-                Select players from your roster to release them. They will automatically be added to the auction for immediate bidding.
+                Select players from your roster to release them. They will be replaced with empty roster slots.
             </p>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <button type="button" id="releaseSelectedBtn" 
@@ -240,7 +264,7 @@
             </div>
             <div style="margin-top: 10px;">
                 <small style="color: #6c757d;">
-                    💡 Tip: Released players will be automatically added to the auction with a $1 starting bid and become immediately available for bidding.
+                    💡 Tip: Released players will be replaced with generic "Empty [Position] Slot" placeholders with no contract.
                 </small>
             </div>
         </div>
@@ -269,8 +293,8 @@
                         <td th:text="${player.name}">Player Name</td>
                         <td th:text="${player.position}">Position</td>
                         <td th:text="${player.team}">MLB Team</td>
-                        <td th:text="${player.contractLength != null ? player.contractLength + ' years' : 'None'}">Contract Length</td>
-                        <td th:text="${player.contractAmount != null ? '$' + #numbers.formatDecimal(player.contractAmount, 0, 2) : 'None'}">Contract Amount</td>
+                        <td th:text="${player.contractLength != null && player.contractLength > 0 ? player.contractLength + ' years' : 'None'}">Contract Length</td>
+                        <td th:text="${player.contractAmount != null && player.contractAmount > 0 ? '$' + #numbers.formatDecimal(player.contractAmount, 0, 2) : 'None'}">Contract Amount</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(players)}">
                         <td colspan="6" style="text-align: center; font-style: italic;">No players found with the current filters.</td>
@@ -344,14 +368,14 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="contractLength">Contract Length (Years):</label>
-                        <input type="number" id="contractLength" name="contractLength" min="1" required>
+                        <label for="contractLength">Contract Length (Years) - Optional:</label>
+                        <input type="number" id="contractLength" name="contractLength" min="0" placeholder="0 for no contract">
                     </div>
                     
                     <div class="form-group">
-                        <label for="contractAmount">Contract Amount ($):</label>
-                        <select id="contractAmount" name="contractAmount" required>
-                            <option value="">Select contract amount</option>
+                        <label for="contractAmount">Contract Amount ($) - Optional:</label>
+                        <select id="contractAmount" name="contractAmount">
+                            <option value="">No contract (Free Agent)</option>
                             <option value="250000">$250,000</option>
                             <option value="500000">$500,000</option>
                             <option value="750000">$750,000</option>

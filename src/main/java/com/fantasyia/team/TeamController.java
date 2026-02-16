@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,8 +83,8 @@ public class TeamController {
     public String addPlayer(@RequestParam String name,
                            @RequestParam String position,
                            @RequestParam String team,
-                           @RequestParam Integer contractLength,
-                           @RequestParam Double contractAmount) {
+                           @RequestParam(required = false) Integer contractLength,
+                           @RequestParam(required = false) Double contractAmount) {
         
         // Get current authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -94,7 +95,11 @@ public class TeamController {
             return "redirect:/login";
         }
 
-        Player player = new Player(name, position, team, contractLength, contractAmount, user.getId());
+        // Use 0 as default if contract values are not provided
+        Integer finalContractLength = (contractLength != null) ? contractLength : 0;
+        Double finalContractAmount = (contractAmount != null) ? contractAmount : 0.0;
+        
+        Player player = new Player(name, position, team, finalContractLength, finalContractAmount, user.getId());
         playerRepository.save(player);
         
         return "redirect:/team";
@@ -226,7 +231,7 @@ public class TeamController {
         }
         
         // Parse contract length
-        Integer contractLength = null;
+        Integer contractLength = 0; // Default to 0 instead of null
         if (row.getLastCellNum() > 3) {
             Cell contractLengthCell = row.getCell(3);
             if (contractLengthCell != null && contractLengthCell.getCellType() != CellType.BLANK) {
@@ -247,7 +252,7 @@ public class TeamController {
         }
         
         // Parse contract amount
-        Double contractAmount = null;
+        Double contractAmount = 0.0; // Default to 0 instead of null
         if (row.getLastCellNum() > 4) {
             Cell contractAmountCell = row.getCell(4);
             if (contractAmountCell != null && contractAmountCell.getCellType() != CellType.BLANK) {
@@ -394,54 +399,69 @@ public class TeamController {
     }
     
     @PostMapping("/team/release-players")
-    public String releaseSelectedPlayers(@RequestParam("selectedPlayers") List<Long> selectedPlayerIds,
+    public String releaseSelectedPlayers(@RequestParam(value = "selectedPlayers", required = false) List<Long> selectedPlayerIds,
                                        RedirectAttributes redirectAttributes) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        System.out.println("=== RELEASE PLAYERS CALLED ===");
+        System.out.println("Selected IDs: " + selectedPlayerIds);
         
-        if (user == null) {
-            return "redirect:/login";
-        }
-        
+        // Validate input
         if (selectedPlayerIds == null || selectedPlayerIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "No players selected for release.");
             return "redirect:/team";
         }
         
         try {
-            // Verify ownership - only allow releasing players owned by the current user or if user is commissioner
+            // Get authenticated user
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+            
+            if (user == null) {
+                return "redirect:/login";
+            }
+            
+            System.out.println("User: " + username + " (ID: " + user.getId() + ")");
+            
+            // Get players and verify ownership
             List<Player> playersToRelease = playerRepository.findAllById(selectedPlayerIds);
             boolean isCommissioner = "COMMISSIONER".equals(user.getRole());
             
             for (Player player : playersToRelease) {
                 if (!isCommissioner && !user.getId().equals(player.getOwnerId())) {
-                    redirectAttributes.addFlashAttribute("error", 
-                        "You can only release your own players.");
+                    redirectAttributes.addFlashAttribute("error", "You can only release your own players.");
                     return "redirect:/team";
                 }
             }
             
-            // Release the selected players
-            playerRepository.releasePlayersToFreeAgency(selectedPlayerIds);
+            System.out.println("Releasing " + playersToRelease.size() + " players...");
             
-            // Automatically add released players to the auction
-            int addedToAuction = addPlayersToAuction(playersToRelease);
-            
-            String message;
-            if (addedToAuction > 0) {
-                message = String.format("Successfully released %d player(s) and added them to auction! They are now available for bidding.", 
-                    selectedPlayerIds.size());
-            } else {
-                message = String.format("Successfully released %d player(s) to free agency. Note: Could not automatically add them to auction.", 
-                    selectedPlayerIds.size());
+            // Replace released players with generic filler players
+            int replacedCount = 0;
+            for (Player player : playersToRelease) {
+                String position = player.getPosition();
+                String originalName = player.getName();
+                
+                // Convert player to a generic filler player
+                player.setName("Empty " + position + " Slot");
+                player.setTeam("Free Agent");
+                // Use 0 instead of null to satisfy database NOT NULL constraints
+                player.setContractLength(0);
+                player.setContractAmount(0.0);
+                // Keep the ownerId so the slot stays with the user
+                
+                playerRepository.save(player);
+                replacedCount++;
+                System.out.println("Replaced: " + originalName + " -> " + player.getName());
             }
-            redirectAttributes.addFlashAttribute("success", message);
+            
+            redirectAttributes.addFlashAttribute("success", 
+                "Successfully released " + replacedCount + " player(s). They have been replaced with empty roster slots.");
+            System.out.println("=== RELEASE COMPLETED ===");
             
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Error releasing players: " + e.getMessage());
+            System.err.println("=== ERROR ===");
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("error", "Error releasing players: " + e.getMessage());
         }
         
         return "redirect:/team";
