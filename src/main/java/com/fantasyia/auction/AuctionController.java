@@ -74,7 +74,10 @@ public class AuctionController {
         Map<Long, Bid> highestBids = activeItems.stream()
             .collect(Collectors.toMap(
                 AuctionItem::getId,
-                item -> bidRepository.findHighestBidForItem(item.getId())
+                item -> {
+                    Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
+                    return highestBid; // Can be null if no bids
+                }
             ));
         
         model.addAttribute("auction", mainAuction);
@@ -90,10 +93,18 @@ public class AuctionController {
 
     @GetMapping("/view")
     public String viewAuction(Model model) {
-        // Get the main auction
+        // Get or create the main auction (commissioners can create, others just view)
         Auction mainAuction = getMainAuction();
         if (mainAuction == null) {
-            return "redirect:/";
+            // Create a default auction if none exists
+            mainAuction = new Auction(
+                "Main Player Auction", 
+                LocalDateTime.now(), 
+                LocalDateTime.now().plusYears(1), // Always running
+                1L, // Default commissioner ID
+                "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
+            );
+            mainAuction = auctionRepository.save(mainAuction);
         }
         
         // Get current user
@@ -113,7 +124,10 @@ public class AuctionController {
         Map<Long, Bid> highestBids = activeItems.stream()
             .collect(Collectors.toMap(
                 AuctionItem::getId,
-                item -> bidRepository.findHighestBidForItem(item.getId())
+                item -> {
+                    Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
+                    return highestBid; // Can be null if no bids
+                }
             ));
         
         Map<Long, Long> bidCounts = activeItems.stream()
@@ -121,6 +135,9 @@ public class AuctionController {
                 AuctionItem::getId,
                 item -> bidRepository.countBidsForItem(item.getId())
             ));
+        
+        // Calculate total bids
+        long totalBids = bidCounts.values().stream().mapToLong(Long::longValue).sum();
         
         // Get user's recent bids if logged in
         Map<Long, List<Bid>> userBids = null;
@@ -137,6 +154,7 @@ public class AuctionController {
         model.addAttribute("playersMap", playersMap);
         model.addAttribute("highestBids", highestBids);
         model.addAttribute("bidCounts", bidCounts);
+        model.addAttribute("totalBids", totalBids);
         model.addAttribute("userBids", userBids);
         model.addAttribute("currentUser", user);
         model.addAttribute("currentDateTime", LocalDateTime.now());

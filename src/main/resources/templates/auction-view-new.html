@@ -303,7 +303,7 @@
                     <div class="stat-label">Players Available</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-number" th:text="${totalBids}">0</div>
+                    <div class="stat-number" th:text="${bidCounts != null ? bidCounts.values().stream().mapToLong(count -> count).sum() : 0}">0</div>
                     <div class="stat-label">Total Bids</div>
                 </div>
                 <div class="stat">
@@ -350,16 +350,16 @@
                         
                         <!-- Bidding Form -->
                         <div th:if="${currentUser != null}">
-                            <form th:action="@{/auction/place-bid}" method="post" class="bid-form">
+                            <form th:action="@{/auction/place-bid}" method="post" class="bid-form"
+                                  onsubmit="return validateBid(this, ${item.currentBid != null ? item.currentBid + 1 : item.startingBid})">
                                 <input type="hidden" name="auctionItemId" th:value="${item.id}">
-                                <input type="hidden" th:id="'minBid_' + ${item.id}" th:value="${item.currentBid != null ? item.currentBid + 1 : item.startingBid}">
                                 <input type="number" name="bidAmount" 
                                        th:id="'bidAmount_' + ${item.id}"
                                        class="bid-input"
                                        th:min="${item.currentBid != null ? item.currentBid + 1 : item.startingBid}"
                                        th:value="${item.currentBid != null ? item.currentBid + 1 : item.startingBid}"
                                        step="1" required>
-                                <button type="submit" class="bid-btn" th:onclick="'return validateBid(' + ${item.id} + ')'">Place Bid</button>
+                                <button type="submit" class="bid-btn">Place Bid</button>
                             </form>
                             
                             <!-- Quick Bid Buttons -->

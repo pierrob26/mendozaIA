@@ -2,6 +2,10 @@ package com.fantasyia.team;
 
 import com.fantasyia.user.UserAccount;
 import com.fantasyia.user.UserAccountRepository;
+import com.fantasyia.auction.Auction;
+import com.fantasyia.auction.AuctionRepository;
+import com.fantasyia.auction.AuctionItem;
+import com.fantasyia.auction.AuctionItemRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -22,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +38,12 @@ public class TeamController {
     
     @Autowired
     private UserAccountRepository userAccountRepository;
+    
+    @Autowired
+    private AuctionRepository auctionRepository;
+    
+    @Autowired
+    private AuctionItemRepository auctionItemRepository;
 
     @GetMapping("/team")
     public String team(Model model,
@@ -325,6 +336,63 @@ public class TeamController {
                 .body(outputStream.toByteArray());
     }
     
+    /**
+     * Helper method to automatically add released players to the auction
+     */
+    private int addPlayersToAuction(List<Player> playersToAdd) {
+        try {
+            // Get or create the main auction
+            Auction mainAuction = getOrCreateMainAuction();
+            if (mainAuction == null) {
+                return 0;
+            }
+            
+            int addedCount = 0;
+            for (Player player : playersToAdd) {
+                // Check if player is already in auction
+                AuctionItem existingItem = auctionItemRepository.findByPlayerIdAndStatus(player.getId(), "ACTIVE");
+                if (existingItem == null) {
+                    // Add player to auction with default starting bid of $1
+                    AuctionItem auctionItem = new AuctionItem(player.getId(), mainAuction.getId(), 1.0);
+                    auctionItemRepository.save(auctionItem);
+                    addedCount++;
+                }
+            }
+            
+            return addedCount;
+        } catch (Exception e) {
+            // Log the error but don't fail the release operation
+            System.err.println("Error adding players to auction: " + e.getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Get or create the main auction (similar to AuctionController logic)
+     */
+    private Auction getOrCreateMainAuction() {
+        try {
+            // Look for existing active auction
+            List<Auction> activeAuctions = auctionRepository.findByStatus("ACTIVE");
+            if (!activeAuctions.isEmpty()) {
+                return activeAuctions.get(0);
+            }
+            
+            // Create main auction if it doesn't exist
+            Auction mainAuction = new Auction(
+                "Main Player Auction", 
+                LocalDateTime.now(), 
+                LocalDateTime.now().plusYears(1), // Always running
+                1L, // Default commissioner ID
+                "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
+            );
+            return auctionRepository.save(mainAuction);
+        } catch (Exception e) {
+            System.err.println("Error creating/getting main auction: " + e.getMessage());
+            return null;
+        }
+    }
+    
     @PostMapping("/team/release-players")
     public String releaseSelectedPlayers(@RequestParam("selectedPlayers") List<Long> selectedPlayerIds,
                                        RedirectAttributes redirectAttributes) {
@@ -358,8 +426,17 @@ public class TeamController {
             // Release the selected players
             playerRepository.releasePlayersToFreeAgency(selectedPlayerIds);
             
-            String message = String.format("Successfully released %d player(s) to auction. They are now free agents available for bidding!", 
-                selectedPlayerIds.size());
+            // Automatically add released players to the auction
+            int addedToAuction = addPlayersToAuction(playersToRelease);
+            
+            String message;
+            if (addedToAuction > 0) {
+                message = String.format("Successfully released %d player(s) and added them to auction! They are now available for bidding.", 
+                    selectedPlayerIds.size());
+            } else {
+                message = String.format("Successfully released %d player(s) to free agency. Note: Could not automatically add them to auction.", 
+                    selectedPlayerIds.size());
+            }
             redirectAttributes.addFlashAttribute("success", message);
             
         } catch (Exception e) {
@@ -370,17 +447,4 @@ public class TeamController {
         return "redirect:/team";
     }
 
-    @PostMapping("/team/clear-all-contracts")
-    public String clearAllContracts(RedirectAttributes redirectAttributes) {
-        try {
-            playerRepository.clearAllContracts();
-            redirectAttributes.addFlashAttribute("success", 
-                "All player contracts have been cleared. All players are now free agents available for auction!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
-                "Error clearing contracts: " + e.getMessage());
-        }
-        
-        return "redirect:/team";
-    }
 }

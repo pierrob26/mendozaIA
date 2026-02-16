@@ -152,7 +152,7 @@
                 return row.cells[1].textContent; // Player name is in the 2nd column (index 1)
             });
             
-            const message = `Are you sure you want to release ${count} player(s) to the auction?\n\nPlayers to be released:\n${playerNames.join('\n')}\n\nThey will become free agents available for bidding.`;
+            const message = `Are you sure you want to release ${count} player(s) to the auction?\n\nPlayers to be released:\n${playerNames.join('\n')}\n\nThey will be automatically added to the auction for bidding.`;
             
             if (confirm(message)) {
                 document.getElementById('releasePlayersForm').submit();
@@ -220,7 +220,7 @@
         <div class="admin-actions" style="margin-top: 20px; padding: 15px; background-color: #e6f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
             <h3 style="margin-top: 0; color: #0056b3;">Release Players to Auction</h3>
             <p style="font-size: 0.9em; color: #0056b3; margin-bottom: 15px;">
-                Select players from your roster to release them as free agents available for auction.
+                Select players from your roster to release them. They will automatically be added to the auction for immediate bidding.
             </p>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <button type="button" id="releaseSelectedBtn" 
@@ -240,25 +240,9 @@
             </div>
             <div style="margin-top: 10px;">
                 <small style="color: #6c757d;">
-                    💡 Tip: Released players will have their contracts cleared and become available for auction immediately.
+                    💡 Tip: Released players will be automatically added to the auction with a $1 starting bid and become immediately available for bidding.
                 </small>
             </div>
-        </div>
-
-        <!-- Commissioner-Only Actions -->
-        <div th:if="${currentUser != null and currentUser.role == 'COMMISSIONER'}" 
-             class="admin-actions" style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-            <h3 style="margin-top: 0; color: #856404;">Commissioner Actions</h3>
-            <p style="font-size: 0.9em; color: #856404; margin-bottom: 15px;">
-                <strong>⚠️ Warning:</strong> This action will clear ALL contracts for ALL players in the system and make them unowned free agents available for auction.
-            </p>
-            <form th:action="@{/team/clear-all-contracts}" method="post" 
-                  onsubmit="return confirm('Are you sure you want to clear ALL contracts and make ALL players free agents? This will remove ownership and contracts. This action cannot be undone!')">
-                <button type="submit" 
-                        style="background-color: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                    🗑️ Clear All Contracts (Emergency Reset)
-                </button>
-            </form>
         </div>
 
         <!-- Players Table -->
