@@ -2,145 +2,451 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title th:text="'Auction: ' + ${auction.name}">Auction Details - FantasyIA</title>
+    <title>Player Auction - FantasyIA</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css"/>
     <style>
         .auction-container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
-        .auction-info {
-            background: #fff;
+        
+        .auction-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .section {
+            background: #fff;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .auction-items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .auction-item {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+            transition: all 0.3s ease;
+        }
+        
+        .auction-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        
+        .auction-item.hot {
+            border-color: #dc3545;
+            background: linear-gradient(to bottom, #fff, #fff5f5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); }
+            50% { box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5); }
+            100% { box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); }
+        }
+        
+        .player-info {
+            text-align: center;
             margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .auction-info.active {
-            border-left: 5px solid #27ae60;
-        }
-        .auction-info.completed {
-            border-left: 5px solid #95a5a6;
-        }
-        .players-section {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .players-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .players-table th, .players-table td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        .players-table th {
-            background: #34495e;
-            color: white;
-        }
-        .players-table tr:nth-child(even) {
-            background: #f9f9f9;
-        }
-        .players-table tr:hover {
-            background: #e8f4f8;
-        }
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
+        
+        .player-name {
+            font-size: 1.4em;
             font-weight: bold;
-            font-size: 12px;
+            color: #2c3e50;
+            margin-bottom: 5px;
         }
-        .status-active {
-            background: #27ae60;
-            color: white;
+        
+        .player-details {
+            font-size: 1em;
+            color: #6c757d;
+            margin-bottom: 10px;
         }
-        .status-completed {
-            background: #95a5a6;
-            color: white;
+        
+        .bid-section {
+            text-align: center;
+            margin: 20px 0;
         }
-        .time-info {
-            background: #e8f4f8;
-            padding: 15px;
-            border-radius: 4px;
+        
+        .current-bid {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        
+        .bid-details {
+            font-size: 0.9em;
+            color: #6c757d;
             margin-bottom: 15px;
         }
+        
+        .bid-form {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .bid-input {
+            width: 120px;
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .bid-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: background-color 0.3s;
+        }
+        
+        .bid-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .bid-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .quick-bid-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .quick-bid-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .quick-bid-btn:hover {
+            background-color: #1e7e34;
+        }
+        
+        .time-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .time-remaining {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .countdown-urgent {
+            color: #dc3545 !important;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+        
+        .bid-history {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .bid-history h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .bid-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .bid-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .bid-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .alert {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .stat {
+            padding: 10px;
+        }
+        
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
     </style>
+    <script>
+        function setQuickBid(itemId, amount) {
+            document.getElementById('bidAmount_' + itemId).value = amount;
+        }
+        
+        function validateBid(form, minBid) {
+            const bidAmount = parseFloat(form.bidAmount.value);
+            if (bidAmount < minBid) {
+                alert('Minimum bid is $' + minBid);
+                return false;
+            }
+            return true;
+        }
+        
+        // Auto-refresh the page every 30 seconds to update auction status
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    </script>
 </head>
 <body>
     <div class="auction-container">
-        <h1>Auction Details</h1>
-        <p><a th:href="@{/auction/manage}">← Back to Manage Auctions</a></p>
+        <div class="auction-header">
+            <h1>🏆 Player Auction</h1>
+            <p>Place your bids now! • Always running • 24-hour minimum after first bid</p>
+            <p><a th:href="@{/}" style="color: white;">← Back to Home</a> | 
+               <a th:href="@{/team}" style="color: white;">My Team</a>
+               <span th:if="${currentUser != null and currentUser.role == 'COMMISSIONER'}">
+                   | <a th:href="@{/auction/manage}" style="color: white;">Manage Auction</a>
+               </span>
+            </p>
+        </div>
 
-        <!-- Auction Information -->
-        <div class="auction-info" th:classappend="${auction.status == 'ACTIVE' ? 'active' : 'completed'}">
-            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
-                <h2 th:text="${auction.name}">Auction Name</h2>
-                <span class="status-badge" th:classappend="${auction.status == 'ACTIVE' ? 'status-active' : 'status-completed'}" 
-                      th:text="${auction.status}">Status</span>
+        <!-- Success/Error Messages -->
+        <div th:if="${success}" class="alert alert-success">
+            <span th:text="${success}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error">
+            <span th:text="${error}"></span>
+        </div>
+
+        <!-- Login Required Message -->
+        <div th:if="${currentUser == null}" class="section" style="text-align: center; background-color: #fff3cd; border: 1px solid #ffeaa7;">
+            <h3>Login Required</h3>
+            <p>You must be logged in to place bids. <a th:href="@{/login}">Login here</a></p>
+        </div>
+
+        <!-- Auction Stats -->
+        <div class="section">
+            <div class="stats-bar">
+                <div class="stat">
+                    <div class="stat-number" th:text="${#lists.size(activeItems)}">0</div>
+                    <div class="stat-label">Players Available</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" th:text="${bidCounts != null ? bidCounts.values().stream().mapToLong(count -> count).sum() : 0}">0</div>
+                    <div class="stat-label">Total Bids</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">24</div>
+                    <div class="stat-label">Hour Minimum</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Auction Items -->
+        <div class="section">
+            <h3>Current Auctions</h3>
+            <div th:if="${#lists.isEmpty(activeItems)}" style="text-align: center; color: #6c757d; font-style: italic; padding: 40px;">
+                No players currently available for auction. Check back later!
             </div>
             
-            <p th:text="${auction.description}" style="margin-bottom: 15px;">Auction Description</p>
-            
-            <div class="time-info">
-                <div style="display: flex; gap: 30px;">
-                    <div>
-                        <strong>Start Time:</strong><br/>
-                        <span th:text="${#temporals.format(auction.startTime, 'EEEE, MMMM dd, yyyy')}">Start Date</span><br/>
-                        <span th:text="${#temporals.format(auction.startTime, 'HH:mm')}">Start Time</span>
-                    </div>
-                    <div>
-                        <strong>End Time:</strong><br/>
-                        <span th:text="${#temporals.format(auction.endTime, 'EEEE, MMMM dd, yyyy')}">End Date</span><br/>
-                        <span th:text="${#temporals.format(auction.endTime, 'HH:mm')}">End Time</span>
-                    </div>
-                    <div th:if="${auction.status == 'ACTIVE'}">
-                        <div th:if="${auction.endTime.isAfter(currentDateTime)}" style="color: #27ae60;">
-                            <strong>Time Remaining:</strong><br/>
-                            <span th:with="hoursLeft=${T(java.time.Duration).between(currentDateTime, auction.endTime).toHours()},
-                                          minutesLeft=${T(java.time.Duration).between(currentDateTime, auction.endTime).toMinutes() % 60}"
-                                  th:text="${hoursLeft > 0 ? hoursLeft + 'h ' + minutesLeft + 'm' : minutesLeft + ' minutes'}">Time Left</span>
+            <div class="auction-items-grid">
+                <div th:each="item : ${activeItems}" 
+                     class="auction-item"
+                     th:classappend="${item.timeRemainingHours >= 0 and item.timeRemainingHours <= 2 ? 'hot' : ''}">
+                    
+                    <div class="player-info">
+                        <div class="player-name" th:text="${playersMap[item.playerId].name}">Player Name</div>
+                        <div class="player-details">
+                            <strong><span th:text="${playersMap[item.playerId].position}">Position</span></strong> • 
+                            <span th:text="${playersMap[item.playerId].team}">Team</span>
                         </div>
-                        <div th:if="${!auction.endTime.isAfter(currentDateTime)}" style="color: #e74c3c;">
-                            <strong>Status:</strong><br/>
-                            Auction Expired
+                    </div>
+                    
+                    <div class="bid-section">
+                        <div th:if="${item.currentBid != null}">
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span></div>
+                            <div class="bid-details">
+                                Current High Bid
+                                <span th:if="${bidCounts[item.id] > 1}">
+                                    • <span th:text="${bidCounts[item.id]}">0</span> bids
+                                </span>
+                            </div>
+                        </div>
+                        <div th:if="${item.currentBid == null}">
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 0, 0)}">1</span></div>
+                            <div class="bid-details">Starting Bid • No bids yet</div>
+                        </div>
+                        
+                        <!-- Bidding Form -->
+                        <div th:if="${currentUser != null}">
+                            <form th:action="@{/auction/place-bid}" method="post" class="bid-form"
+                                  onsubmit="return validateBid(this, ${item.currentBid != null ? item.currentBid + 1 : item.startingBid})">
+                                <input type="hidden" name="auctionItemId" th:value="${item.id}">
+                                <input type="number" name="bidAmount" 
+                                       th:id="'bidAmount_' + ${item.id}"
+                                       class="bid-input"
+                                       th:min="${item.currentBid != null ? item.currentBid + 1 : item.startingBid}"
+                                       th:value="${item.currentBid != null ? item.currentBid + 1 : item.startingBid}"
+                                       step="1" required>
+                                <button type="submit" class="bid-btn">Place Bid</button>
+                            </form>
+                            
+                            <!-- Quick Bid Buttons -->
+                            <div class="quick-bid-buttons">
+                                <button type="button" class="quick-bid-btn" 
+                                        th:onclick="'setQuickBid(' + ${item.id} + ', ' + ${item.currentBid != null ? item.currentBid + 5 : item.startingBid + 4} + ')'"
+                                        >+$5</button>
+                                <button type="button" class="quick-bid-btn" 
+                                        th:onclick="'setQuickBid(' + ${item.id} + ', ' + ${item.currentBid != null ? item.currentBid + 10 : item.startingBid + 9} + ')'"
+                                        >+$10</button>
+                                <button type="button" class="quick-bid-btn" 
+                                        th:onclick="'setQuickBid(' + ${item.id} + ', ' + ${item.currentBid != null ? item.currentBid + 25 : item.startingBid + 24} + ')'"
+                                        >+$25</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Information -->
+                    <div class="time-info">
+                        <div th:if="${item.firstBidTime != null}">
+                            <div class="time-remaining" 
+                                 th:classappend="${item.timeRemainingHours <= 2 ? 'countdown-urgent' : ''}">
+                                <span th:if="${item.timeRemainingHours > 0}">
+                                    🕐 <span th:text="${item.timeRemainingHours}">0</span> hours remaining
+                                </span>
+                                <span th:if="${item.timeRemainingHours <= 0}">
+                                    ⏰ Eligible for removal
+                                </span>
+                            </div>
+                            <div style="font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                                First bid: <span th:text="${#temporals.format(item.firstBidTime, 'MMM d, h:mm a')}">Time</span>
+                            </div>
+                        </div>
+                        <div th:if="${item.firstBidTime == null}" style="color: #6c757d;">
+                            ⏳ No bids yet • No time limit
+                        </div>
+                    </div>
+                    
+                    <!-- User's Bid Status -->
+                    <div th:if="${currentUser != null and userBids != null and userBids[item.id] != null and !userBids[item.id].isEmpty()}" 
+                         class="bid-history">
+                        <h5>Your Bid History</h5>
+                        <div class="bid-list">
+                            <div th:each="bid : ${userBids[item.id]}" class="bid-entry">
+                                <span>$<span th:text="${#numbers.formatDecimal(bid.amount, 0, 0)}">0</span></span>
+                                <span th:text="${#temporals.format(bid.bidTime, 'MMM d, h:mm a')}">Time</span>
+                                <span th:if="${bid.status == 'WINNING'}" style="color: #28a745; font-weight: bold;">WINNING</span>
+                                <span th:if="${bid.status == 'OUTBID'}" style="color: #dc3545;">OUTBID</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Available Free Agents -->
-        <div class="players-section">
-            <h3>Available Free Agents (<span th:text="${#lists.size(freeAgents)}">0</span> players)</h3>
-            <p>These players are available for auction as they currently have no contracts:</p>
-            
-            <div th:if="${#lists.isEmpty(freeAgents)}" style="text-align: center; color: #666; font-style: italic; padding: 20px;">
-                No free agents available. All players are currently under contract.
+        
+        <!-- How It Works -->
+        <div class="section" style="background-color: #f8f9fa;">
+            <h3>How the Auction Works</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div>
+                    <h4>🎯 Bidding</h4>
+                    <ul>
+                        <li>Place bids on any available player</li>
+                        <li>Minimum bid increment: $1</li>
+                        <li>Use quick bid buttons for convenience</li>
+                        <li>You can bid multiple times</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>⏰ Timing</h4>
+                    <ul>
+                        <li>24-hour minimum after first bid</li>
+                        <li>Commissioner can remove players after time expires</li>
+                        <li>No maximum time limit</li>
+                        <li>Page auto-refreshes every 30 seconds</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>🏆 Winning</h4>
+                    <ul>
+                        <li>Highest bidder when removed wins</li>
+                        <li>Player gets 1-year contract</li>
+                        <li>Contract amount = winning bid</li>
+                        <li>Player appears on your team page</li>
+                    </ul>
+                </div>
             </div>
-            
-            <table th:if="${!#lists.isEmpty(freeAgents)}" class="players-table">
-                <thead>
-                    <tr>
-                        <th>Player Name</th>
-                        <th>Position</th>
-                        <th>MLB Team</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="player : ${freeAgents}">
-                        <td th:text="${player.name}">Player Name</td>
-                        <td th:text="${player.position}">Position</td>
-                        <td th:text="${player.team}">MLB Team</td>
-                        <td style="color: #27ae60; font-weight: bold;">Free Agent</td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </div>
 </body>

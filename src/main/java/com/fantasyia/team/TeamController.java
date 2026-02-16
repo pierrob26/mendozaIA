@@ -57,6 +57,7 @@ public class TeamController {
         );
         
         model.addAttribute("players", players);
+        model.addAttribute("currentUser", user);
         model.addAttribute("selectedPosition", position);
         model.addAttribute("minContract", minContract);
         model.addAttribute("maxContract", maxContract);
@@ -322,5 +323,64 @@ public class TeamController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(outputStream.toByteArray());
+    }
+    
+    @PostMapping("/team/release-players")
+    public String releaseSelectedPlayers(@RequestParam("selectedPlayers") List<Long> selectedPlayerIds,
+                                       RedirectAttributes redirectAttributes) {
+        // Get current authenticated user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        
+        if (user == null) {
+            return "redirect:/login";
+        }
+        
+        if (selectedPlayerIds == null || selectedPlayerIds.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "No players selected for release.");
+            return "redirect:/team";
+        }
+        
+        try {
+            // Verify ownership - only allow releasing players owned by the current user or if user is commissioner
+            List<Player> playersToRelease = playerRepository.findAllById(selectedPlayerIds);
+            boolean isCommissioner = "COMMISSIONER".equals(user.getRole());
+            
+            for (Player player : playersToRelease) {
+                if (!isCommissioner && !user.getId().equals(player.getOwnerId())) {
+                    redirectAttributes.addFlashAttribute("error", 
+                        "You can only release your own players.");
+                    return "redirect:/team";
+                }
+            }
+            
+            // Release the selected players
+            playerRepository.releasePlayersToFreeAgency(selectedPlayerIds);
+            
+            String message = String.format("Successfully released %d player(s) to auction. They are now free agents available for bidding!", 
+                selectedPlayerIds.size());
+            redirectAttributes.addFlashAttribute("success", message);
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", 
+                "Error releasing players: " + e.getMessage());
+        }
+        
+        return "redirect:/team";
+    }
+
+    @PostMapping("/team/clear-all-contracts")
+    public String clearAllContracts(RedirectAttributes redirectAttributes) {
+        try {
+            playerRepository.clearAllContracts();
+            redirectAttributes.addFlashAttribute("success", 
+                "All player contracts have been cleared. All players are now free agents available for auction!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", 
+                "Error clearing contracts: " + e.getMessage());
+        }
+        
+        return "redirect:/team";
     }
 }
