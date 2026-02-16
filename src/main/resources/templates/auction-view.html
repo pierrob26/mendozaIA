@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Auction: ' + ${auction.name}">Auction Details - FantasyIA</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css"/>
+    <style>
+        .auction-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .auction-info {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .auction-info.active {
+            border-left: 5px solid #27ae60;
+        }
+        .auction-info.completed {
+            border-left: 5px solid #95a5a6;
+        }
+        .players-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .players-table th, .players-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .players-table th {
+            background: #34495e;
+            color: white;
+        }
+        .players-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .players-table tr:hover {
+            background: #e8f4f8;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .status-active {
+            background: #27ae60;
+            color: white;
+        }
+        .status-completed {
+            background: #95a5a6;
+            color: white;
+        }
+        .time-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auction-container">
+        <h1>Auction Details</h1>
+        <p><a th:href="@{/auction/manage}">← Back to Manage Auctions</a></p>
+
+        <!-- Auction Information -->
+        <div class="auction-info" th:classappend="${auction.status == 'ACTIVE' ? 'active' : 'completed'}">
+            <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+                <h2 th:text="${auction.name}">Auction Name</h2>
+                <span class="status-badge" th:classappend="${auction.status == 'ACTIVE' ? 'status-active' : 'status-completed'}" 
+                      th:text="${auction.status}">Status</span>
+            </div>
+            
+            <p th:text="${auction.description}" style="margin-bottom: 15px;">Auction Description</p>
+            
+            <div class="time-info">
+                <div style="display: flex; gap: 30px;">
+                    <div>
+                        <strong>Start Time:</strong><br/>
+                        <span th:text="${#temporals.format(auction.startTime, 'EEEE, MMMM dd, yyyy')}">Start Date</span><br/>
+                        <span th:text="${#temporals.format(auction.startTime, 'HH:mm')}">Start Time</span>
+                    </div>
+                    <div>
+                        <strong>End Time:</strong><br/>
+                        <span th:text="${#temporals.format(auction.endTime, 'EEEE, MMMM dd, yyyy')}">End Date</span><br/>
+                        <span th:text="${#temporals.format(auction.endTime, 'HH:mm')}">End Time</span>
+                    </div>
+                    <div th:if="${auction.status == 'ACTIVE'}">
+                        <div th:if="${auction.endTime.isAfter(currentDateTime)}" style="color: #27ae60;">
+                            <strong>Time Remaining:</strong><br/>
+                            <span th:with="hoursLeft=${T(java.time.Duration).between(currentDateTime, auction.endTime).toHours()},
+                                          minutesLeft=${T(java.time.Duration).between(currentDateTime, auction.endTime).toMinutes() % 60}"
+                                  th:text="${hoursLeft > 0 ? hoursLeft + 'h ' + minutesLeft + 'm' : minutesLeft + ' minutes'}">Time Left</span>
+                        </div>
+                        <div th:if="${!auction.endTime.isAfter(currentDateTime)}" style="color: #e74c3c;">
+                            <strong>Status:</strong><br/>
+                            Auction Expired
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Free Agents -->
+        <div class="players-section">
+            <h3>Available Free Agents (<span th:text="${#lists.size(freeAgents)}">0</span> players)</h3>
+            <p>These players are available for auction as they currently have no contracts:</p>
+            
+            <div th:if="${#lists.isEmpty(freeAgents)}" style="text-align: center; color: #666; font-style: italic; padding: 20px;">
+                No free agents available. All players are currently under contract.
+            </div>
+            
+            <table th:if="${!#lists.isEmpty(freeAgents)}" class="players-table">
+                <thead>
+                    <tr>
+                        <th>Player Name</th>
+                        <th>Position</th>
+                        <th>MLB Team</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="player : ${freeAgents}">
+                        <td th:text="${player.name}">Player Name</td>
+                        <td th:text="${player.position}">Position</td>
+                        <td th:text="${player.team}">MLB Team</td>
+                        <td style="color: #27ae60; font-weight: bold;">Free Agent</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
