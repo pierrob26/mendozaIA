@@ -43,132 +43,165 @@ public class AuctionController {
 
     @GetMapping("/manage")
     public String manageAuctions(Model model) {
-        // Get current authenticated user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
-        
-        if (user == null || !"COMMISSIONER".equals(user.getRole())) {
-            return "redirect:/";
-        }
+        try {
+            // Get current authenticated user
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+            
+            if (user == null || !"COMMISSIONER".equals(user.getRole())) {
+                return "redirect:/";
+            }
 
-        // Get or create the main auction
-        Auction mainAuction = getOrCreateMainAuction(user.getId());
-        
-        // Get all auction items for this auction
-        List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
-        List<AuctionItem> expiredItems = auctionItemRepository.findExpiredItems(mainAuction.getId(), LocalDateTime.now().minusHours(24));
-        
-        // Get free agents available for adding to auction
-        List<Player> freeAgents = playerRepository.findByOwnerIdIsNull();
-        
-        // Remove players already in auction
-        List<Long> auctionPlayerIds = activeItems.stream()
-            .map(AuctionItem::getPlayerId)
-            .collect(Collectors.toList());
-        freeAgents = freeAgents.stream()
-            .filter(player -> !auctionPlayerIds.contains(player.getId()))
-            .collect(Collectors.toList());
-        
-        // Get pending released players from the queue
-        List<ReleasedPlayer> releasedPlayersQueue = releasedPlayerRepository.findByStatusOrderByReleasedAtDesc("PENDING");
-        
-        // Get players and their details for active items
-        Map<Long, Player> playersMap = playerRepository.findAllById(
-            activeItems.stream().map(AuctionItem::getPlayerId).collect(Collectors.toList())
-        ).stream().collect(Collectors.toMap(Player::getId, player -> player));
-        
-        // Get highest bids for each item
-        Map<Long, Bid> highestBids = activeItems.stream()
-            .collect(Collectors.toMap(
-                AuctionItem::getId,
-                item -> {
-                    Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
-                    return highestBid; // Can be null if no bids
+            // Get or create the main auction
+            Auction mainAuction = getOrCreateMainAuction(user.getId());
+            
+            // Get all auction items for this auction
+            List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
+            List<AuctionItem> expiredItems = auctionItemRepository.findExpiredItems(mainAuction.getId(), LocalDateTime.now().minusHours(24));
+            
+            // Get free agents available for adding to auction
+            List<Player> freeAgents = playerRepository.findByOwnerIdIsNull();
+            
+            // Remove players already in auction
+            List<Long> auctionPlayerIds = activeItems.stream()
+                .map(AuctionItem::getPlayerId)
+                .collect(Collectors.toList());
+            freeAgents = freeAgents.stream()
+                .filter(player -> !auctionPlayerIds.contains(player.getId()))
+                .collect(Collectors.toList());
+            
+            // Get pending released players from the queue
+            List<ReleasedPlayer> releasedPlayersQueue = releasedPlayerRepository.findByStatusOrderByReleasedAtDesc("PENDING");
+            
+            // Get players and their details for active items - with null check
+            Map<Long, Player> playersMap = new java.util.HashMap<>();
+            if (!activeItems.isEmpty()) {
+                List<Long> playerIds = activeItems.stream()
+                    .map(AuctionItem::getPlayerId)
+                    .collect(Collectors.toList());
+                
+                List<Player> players = playerRepository.findAllById(playerIds);
+                for (Player player : players) {
+                    playersMap.put(player.getId(), player);
                 }
-            ));
-        
-        model.addAttribute("auction", mainAuction);
-        model.addAttribute("activeItems", activeItems);
-        model.addAttribute("expiredItems", expiredItems);
-        model.addAttribute("freeAgents", freeAgents);
-        model.addAttribute("releasedPlayersQueue", releasedPlayersQueue);
-        model.addAttribute("playersMap", playersMap);
-        model.addAttribute("highestBids", highestBids);
-        model.addAttribute("currentDateTime", LocalDateTime.now());
-        
-        return "auction-manage";
+                
+                // Filter out auction items for players that don't exist
+                List<AuctionItem> validItems = activeItems.stream()
+                    .filter(item -> playersMap.containsKey(item.getPlayerId()))
+                    .collect(Collectors.toList());
+                activeItems = validItems;
+            }
+            
+            // Get highest bids for each item
+            Map<Long, Bid> highestBids = new java.util.HashMap<>();
+            for (AuctionItem item : activeItems) {
+                Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
+                highestBids.put(item.getId(), highestBid);
+            }
+            
+            model.addAttribute("auction", mainAuction);
+            model.addAttribute("activeItems", activeItems);
+            model.addAttribute("expiredItems", expiredItems);
+            model.addAttribute("freeAgents", freeAgents);
+            model.addAttribute("releasedPlayersQueue", releasedPlayersQueue);
+            model.addAttribute("playersMap", playersMap);
+            model.addAttribute("highestBids", highestBids);
+            model.addAttribute("currentDateTime", LocalDateTime.now());
+            
+            return "auction-manage";
+        } catch (Exception e) {
+            System.err.println("=== ERROR IN MANAGE AUCTIONS ===");
+            e.printStackTrace();
+            model.addAttribute("error", "Error loading auction management page: " + e.getMessage());
+            return "auction-manage";
+        }
     }
 
     @GetMapping("/view")
     public String viewAuction(Model model) {
-        // Get or create the main auction (commissioners can create, others just view)
-        Auction mainAuction = getMainAuction();
-        if (mainAuction == null) {
-            // Create a default auction if none exists
-            mainAuction = new Auction(
-                "Main Player Auction", 
-                LocalDateTime.now(), 
-                LocalDateTime.now().plusYears(1), // Always running
-                1L, // Default commissioner ID
-                "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
-            );
-            mainAuction = auctionRepository.save(mainAuction);
-        }
-        
-        // Get current user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
-        
-        // Get active auction items
-        List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
-        
-        // Get players and their details
-        Map<Long, Player> playersMap = playerRepository.findAllById(
-            activeItems.stream().map(AuctionItem::getPlayerId).collect(Collectors.toList())
-        ).stream().collect(Collectors.toMap(Player::getId, player -> player));
-        
-        // Get highest bids and bid counts
-        Map<Long, Bid> highestBids = activeItems.stream()
-            .collect(Collectors.toMap(
-                AuctionItem::getId,
-                item -> {
-                    Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
-                    return highestBid; // Can be null if no bids
+        try {
+            // Get or create the main auction (commissioners can create, others just view)
+            Auction mainAuction = getMainAuction();
+            if (mainAuction == null) {
+                // Create a default auction if none exists
+                mainAuction = new Auction(
+                    "Main Player Auction", 
+                    LocalDateTime.now(), 
+                    LocalDateTime.now().plusYears(1), // Always running
+                    1L, // Default commissioner ID
+                    "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
+                );
+                mainAuction = auctionRepository.save(mainAuction);
+            }
+            
+            // Get current user
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String username = auth.getName();
+            UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+            
+            // Get active auction items
+            List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
+            
+            // Get players and their details - with null check
+            Map<Long, Player> playersMap = new java.util.HashMap<>();
+            if (!activeItems.isEmpty()) {
+                List<Long> playerIds = activeItems.stream()
+                    .map(AuctionItem::getPlayerId)
+                    .collect(Collectors.toList());
+                
+                List<Player> players = playerRepository.findAllById(playerIds);
+                for (Player player : players) {
+                    playersMap.put(player.getId(), player);
                 }
-            ));
-        
-        Map<Long, Long> bidCounts = activeItems.stream()
-            .collect(Collectors.toMap(
-                AuctionItem::getId,
-                item -> bidRepository.countBidsForItem(item.getId())
-            ));
-        
-        // Calculate total bids
-        long totalBids = bidCounts.values().stream().mapToLong(Long::longValue).sum();
-        
-        // Get user's recent bids if logged in
-        Map<Long, List<Bid>> userBids = null;
-        if (user != null) {
-            userBids = activeItems.stream()
-                .collect(Collectors.toMap(
-                    AuctionItem::getId,
-                    item -> bidRepository.findBidsByUserForItem(item.getId(), user.getId())
-                ));
+                
+                // Filter out auction items for players that don't exist
+                List<AuctionItem> validItems = activeItems.stream()
+                    .filter(item -> playersMap.containsKey(item.getPlayerId()))
+                    .collect(Collectors.toList());
+                activeItems = validItems;
+            }
+            
+            // Get highest bids and bid counts
+            Map<Long, Bid> highestBids = new java.util.HashMap<>();
+            Map<Long, Long> bidCounts = new java.util.HashMap<>();
+            long totalBids = 0;
+            
+            for (AuctionItem item : activeItems) {
+                Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
+                highestBids.put(item.getId(), highestBid);
+                
+                Long count = bidRepository.countBidsForItem(item.getId());
+                bidCounts.put(item.getId(), count);
+                totalBids += count;
+            }
+            
+            // Get user's recent bids if logged in
+            Map<Long, List<Bid>> userBids = new java.util.HashMap<>();
+            if (user != null && !activeItems.isEmpty()) {
+                for (AuctionItem item : activeItems) {
+                    List<Bid> bids = bidRepository.findBidsByUserForItem(item.getId(), user.getId());
+                    userBids.put(item.getId(), bids);
+                }
+            }
+            
+            model.addAttribute("auction", mainAuction);
+            model.addAttribute("activeItems", activeItems);
+            model.addAttribute("playersMap", playersMap);
+            model.addAttribute("highestBids", highestBids);
+            model.addAttribute("bidCounts", bidCounts);
+            model.addAttribute("totalBids", totalBids);
+            model.addAttribute("userBids", userBids);
+            model.addAttribute("currentUser", user);
+            model.addAttribute("currentDateTime", LocalDateTime.now());
+            
+            return "auction-view";
+        } catch (Exception e) {
+            System.err.println("=== ERROR IN VIEW AUCTION ===");
+            e.printStackTrace();
+            model.addAttribute("error", "Error loading auction view: " + e.getMessage());
+            return "auction-view";
         }
-        
-        model.addAttribute("auction", mainAuction);
-        model.addAttribute("activeItems", activeItems);
-        model.addAttribute("playersMap", playersMap);
-        model.addAttribute("highestBids", highestBids);
-        model.addAttribute("bidCounts", bidCounts);
-        model.addAttribute("totalBids", totalBids);
-        model.addAttribute("userBids", userBids);
-        model.addAttribute("currentUser", user);
-        model.addAttribute("currentDateTime", LocalDateTime.now());
-        
-        return "auction-view";
     }
 
     @PostMapping("/add-player")

@@ -326,10 +326,13 @@
                      th:classappend="${item.timeRemainingHours >= 0 and item.timeRemainingHours <= 2 ? 'hot' : ''}">
                     
                     <div class="player-info">
-                        <div class="player-name" th:text="${playersMap[item.playerId].name}">Player Name</div>
-                        <div class="player-details">
+                        <div class="player-name" th:text="${playersMap.containsKey(item.playerId) ? playersMap[item.playerId].name : 'Unknown Player'}">Player Name</div>
+                        <div class="player-details" th:if="${playersMap.containsKey(item.playerId)}">
                             <strong><span th:text="${playersMap[item.playerId].position}">Position</span></strong> • 
                             <span th:text="${playersMap[item.playerId].team}">Team</span>
+                        </div>
+                        <div class="player-details" th:unless="${playersMap.containsKey(item.playerId)}" style="color: #dc3545;">
+                            Player data missing
                         </div>
                     </div>
                     
