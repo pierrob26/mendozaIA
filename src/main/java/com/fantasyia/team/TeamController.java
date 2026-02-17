@@ -45,6 +45,9 @@ public class TeamController {
     
     @Autowired
     private AuctionItemRepository auctionItemRepository;
+    
+    @Autowired
+    private ReleasedPlayerRepository releasedPlayerRepository;
 
     @GetMapping("/team")
     public String team(Model model,
@@ -435,27 +438,37 @@ public class TeamController {
             
             System.out.println("Releasing " + playersToRelease.size() + " players...");
             
-            // Replace released players with generic filler players
-            int replacedCount = 0;
+            // Add released players to the commissioner queue
+            int queuedCount = 0;
             for (Player player : playersToRelease) {
                 String position = player.getPosition();
                 String originalName = player.getName();
                 
-                // Convert player to a generic filler player
+                // Add to released players queue
+                ReleasedPlayer releasedPlayer = new ReleasedPlayer(
+                    originalName,
+                    player.getPosition(),
+                    player.getTeam(),
+                    player.getContractLength(),
+                    player.getContractAmount(),
+                    player.getOwnerId()
+                );
+                releasedPlayerRepository.save(releasedPlayer);
+                
+                // Replace with generic filler player
                 player.setName("Empty " + position + " Slot");
                 player.setTeam("Free Agent");
-                // Use 0 instead of null to satisfy database NOT NULL constraints
                 player.setContractLength(0);
                 player.setContractAmount(0.0);
                 // Keep the ownerId so the slot stays with the user
                 
                 playerRepository.save(player);
-                replacedCount++;
-                System.out.println("Replaced: " + originalName + " -> " + player.getName());
+                queuedCount++;
+                System.out.println("Released to queue: " + originalName + " -> replaced with " + player.getName());
             }
             
             redirectAttributes.addFlashAttribute("success", 
-                "Successfully released " + replacedCount + " player(s). They have been replaced with empty roster slots.");
+                "Successfully released " + queuedCount + " player(s). They have been added to the commissioner queue for auction review.");
             System.out.println("=== RELEASE COMPLETED ===");
             
         } catch (Exception e) {

@@ -185,8 +185,70 @@
                     <div class="stat-label">Available Players</div>
                 </div>
                 <div class="stat">
+                    <div class="stat-number" th:text="${#lists.size(releasedPlayersQueue)}">0</div>
+                    <div class="stat-label">Released Players Queue</div>
+                </div>
+                <div class="stat">
                     <div class="stat-number" th:text="${#lists.size(expiredItems)}">0</div>
                     <div class="stat-label">Ready to Remove</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Released Players Queue (Commissioner Only) -->
+        <div class="section" th:if="${!#lists.isEmpty(releasedPlayersQueue)}" style="background-color: #fff3cd; border: 2px solid #ffc107;">
+            <h3 style="color: #856404;">🔔 Released Players Queue</h3>
+            <p style="color: #856404; margin-bottom: 20px;">
+                These players have been released by their owners and are pending commissioner approval to be added to the auction.
+            </p>
+            
+            <div style="display: grid; gap: 15px;">
+                <div th:each="releasedPlayer : ${releasedPlayersQueue}" 
+                     style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ffc107; display: flex; justify-content: space-between; align-items: center;">
+                    
+                    <div style="flex: 1;">
+                        <div style="font-size: 1.1em; font-weight: bold; color: #2c3e50;">
+                            <span th:text="${releasedPlayer.playerName}">Player Name</span>
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.9em;">
+                            <span th:text="${releasedPlayer.position}">Position</span> • 
+                            <span th:text="${releasedPlayer.mlbTeam}">Team</span>
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.85em; margin-top: 5px;">
+                            Released: <span th:text="${#temporals.format(releasedPlayer.releasedAt, 'MMM d, yyyy h:mm a')}">Date</span>
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.85em;" th:if="${releasedPlayer.previousContractAmount != null and releasedPlayer.previousContractAmount > 0}">
+                            Previous Contract: 
+                            $<span th:text="${#numbers.formatDecimal(releasedPlayer.previousContractAmount, 0, 0)}">0</span> • 
+                            <span th:text="${releasedPlayer.previousContractLength}">0</span> years
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <form th:action="@{/auction/add-released-player}" method="post" style="display: inline;">
+                            <input type="hidden" name="releasedPlayerId" th:value="${releasedPlayer.id}"/>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label th:for="${'startingBid_' + releasedPlayer.id}" style="font-size: 0.9em; white-space: nowrap;">Starting Bid: $</label>
+                                <input type="number" th:id="${'startingBid_' + releasedPlayer.id}" name="startingBid" 
+                                       min="1" step="1" value="1" required 
+                                       style="width: 80px; padding: 5px;">
+                                <button type="submit" 
+                                        style="background-color: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                                    ✅ Add to Auction
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <form th:action="@{/auction/reject-released-player}" method="post" 
+                              onsubmit="return confirm('Are you sure you want to reject this player?')"
+                              style="display: inline;">
+                            <input type="hidden" name="releasedPlayerId" th:value="${releasedPlayer.id}"/>
+                            <button type="submit" 
+                                    style="background-color: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                ❌ Reject
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

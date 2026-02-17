@@ -2,6 +2,8 @@ package com.fantasyia.auction;
 
 import com.fantasyia.team.Player;
 import com.fantasyia.team.PlayerRepository;
+import com.fantasyia.team.ReleasedPlayer;
+import com.fantasyia.team.ReleasedPlayerRepository;
 import com.fantasyia.user.UserAccount;
 import com.fantasyia.user.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,9 @@ public class AuctionController {
     
     @Autowired
     private UserAccountRepository userAccountRepository;
+    
+    @Autowired
+    private ReleasedPlayerRepository releasedPlayerRepository;
 
     @GetMapping("/manage")
     public String manageAuctions(Model model) {
@@ -65,6 +70,9 @@ public class AuctionController {
             .filter(player -> !auctionPlayerIds.contains(player.getId()))
             .collect(Collectors.toList());
         
+        // Get pending released players from the queue
+        List<ReleasedPlayer> releasedPlayersQueue = releasedPlayerRepository.findByStatusOrderByReleasedAtDesc("PENDING");
+        
         // Get players and their details for active items
         Map<Long, Player> playersMap = playerRepository.findAllById(
             activeItems.stream().map(AuctionItem::getPlayerId).collect(Collectors.toList())
@@ -84,6 +92,7 @@ public class AuctionController {
         model.addAttribute("activeItems", activeItems);
         model.addAttribute("expiredItems", expiredItems);
         model.addAttribute("freeAgents", freeAgents);
+        model.addAttribute("releasedPlayersQueue", releasedPlayersQueue);
         model.addAttribute("playersMap", playersMap);
         model.addAttribute("highestBids", highestBids);
         model.addAttribute("currentDateTime", LocalDateTime.now());
@@ -274,7 +283,132 @@ public class AuctionController {
             redirectAttributes.addFlashAttribute("error", "Error placing bid: " + e.getMessage());
         }
         
-        return "redirect:/auction/view";
+        return "redirect:/auction/manage";
+    }
+
+    @PostMapping("/add-released-player")
+    public String addReleasedPlayerToAuction(@RequestParam Long releasedPlayerId,
+                                            @RequestParam(defaultValue = "1.0") Double startingBid,
+                                            RedirectAttributes redirectAttributes) {
+        
+        System.out.println("=== ADD RELEASED PLAYER TO AUCTION ===");
+        System.out.println("Released Player ID: " + releasedPlayerId);
+        System.out.println("Starting Bid: " + startingBid);
+        
+        // Check commissioner permissions
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        
+        if (user == null || !"COMMISSIONER".equals(user.getRole())) {
+            redirectAttributes.addFlashAttribute("error", "Only commissioners can add players to auction");
+            return "redirect:/auction/manage";
+        }
+
+        try {
+            // Get released player from queue
+            ReleasedPlayer releasedPlayer = releasedPlayerRepository.findById(releasedPlayerId).orElse(null);
+            if (releasedPlayer == null) {
+                redirectAttributes.addFlashAttribute("error", "Released player not found");
+                return "redirect:/auction/manage";
+            }
+            
+            if (!"PENDING".equals(releasedPlayer.getStatus())) {
+                redirectAttributes.addFlashAttribute("error", "Released player already processed (status: " + releasedPlayer.getStatus() + ")");
+                return "redirect:/auction/manage";
+            }
+            
+            System.out.println("Found released player: " + releasedPlayer.getPlayerName());
+            
+            // Get or create main auction
+            Auction mainAuction = getOrCreateMainAuction(user.getId());
+            System.out.println("Main auction ID: " + mainAuction.getId());
+            
+            // Create new player as free agent
+            Player player = new Player(
+                releasedPlayer.getPlayerName(),
+                releasedPlayer.getPosition(),
+                releasedPlayer.getMlbTeam(),
+                Integer.valueOf(0),
+                Double.valueOf(0.0),
+                null  // Free agent (no owner)
+            );
+            
+            System.out.println("Saving player: " + player.getName());
+            player = playerRepository.save(player);
+            System.out.println("Player saved with ID: " + player.getId());
+            
+            // Add player to auction
+            AuctionItem auctionItem = new AuctionItem(player.getId(), mainAuction.getId(), startingBid);
+            auctionItemRepository.save(auctionItem);
+            System.out.println("Auction item created");
+            
+            // Update released player status
+            releasedPlayer.setStatus("ADDED_TO_AUCTION");
+            releasedPlayerRepository.save(releasedPlayer);
+            System.out.println("Released player status updated");
+            
+            redirectAttributes.addFlashAttribute("success", 
+                "Player " + releasedPlayer.getPlayerName() + " added to auction with starting bid $" + startingBid);
+            
+            System.out.println("=== SUCCESS ===");
+            
+        } catch (Exception e) {
+            System.err.println("=== ERROR ===");
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("error", "Error adding released player to auction: " + e.getMessage());
+        }
+        
+        return "redirect:/auction/manage";
+    }
+
+    @PostMapping("/reject-released-player")
+    public String rejectReleasedPlayer(@RequestParam Long releasedPlayerId,
+                                      RedirectAttributes redirectAttributes) {
+        
+        System.out.println("=== REJECT RELEASED PLAYER ===");
+        System.out.println("Released Player ID: " + releasedPlayerId);
+        
+        // Check commissioner permissions
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        
+        if (user == null || !"COMMISSIONER".equals(user.getRole())) {
+            redirectAttributes.addFlashAttribute("error", "Only commissioners can manage the release queue");
+            return "redirect:/auction/manage";
+        }
+
+        try {
+            ReleasedPlayer releasedPlayer = releasedPlayerRepository.findById(releasedPlayerId).orElse(null);
+            if (releasedPlayer == null) {
+                redirectAttributes.addFlashAttribute("error", "Released player not found");
+                return "redirect:/auction/manage";
+            }
+            
+            if (!"PENDING".equals(releasedPlayer.getStatus())) {
+                redirectAttributes.addFlashAttribute("error", "Released player already processed (status: " + releasedPlayer.getStatus() + ")");
+                return "redirect:/auction/manage";
+            }
+            
+            System.out.println("Rejecting player: " + releasedPlayer.getPlayerName());
+            
+            // Mark as rejected
+            releasedPlayer.setStatus("REJECTED");
+            releasedPlayerRepository.save(releasedPlayer);
+            
+            redirectAttributes.addFlashAttribute("success", 
+                "Player " + releasedPlayer.getPlayerName() + " rejected from auction queue");
+            
+            System.out.println("=== SUCCESS ===");
+            
+        } catch (Exception e) {
+            System.err.println("=== ERROR ===");
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("error", "Error rejecting released player: " + e.getMessage());
+        }
+        
+        return "redirect:/auction/manage";
     }
 
     @PostMapping("/remove-player/{itemId}")

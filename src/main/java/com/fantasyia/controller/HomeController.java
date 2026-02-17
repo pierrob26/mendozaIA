@@ -1,5 +1,6 @@
 package com.fantasyia.controller;
 
+import com.fantasyia.team.ReleasedPlayerRepository;
 import com.fantasyia.user.UserAccount;
 import com.fantasyia.user.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,9 @@ public class HomeController {
 
     @Autowired
     private UserAccountRepository userAccountRepository;
+    
+    @Autowired
+    private ReleasedPlayerRepository releasedPlayerRepository;
 
     @GetMapping("/")
     public String home(Model model) {
@@ -23,6 +27,12 @@ public class HomeController {
             String username = auth.getName();
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
             model.addAttribute("currentUser", user);
+            
+            // Add pending released players count for commissioners
+            if (user != null && "COMMISSIONER".equals(user.getRole())) {
+                long pendingCount = releasedPlayerRepository.countByStatus("PENDING");
+                model.addAttribute("pendingReleasedPlayersCount", pendingCount);
+            }
         }
         return "home";
     }
