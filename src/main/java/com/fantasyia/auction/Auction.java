@@ -26,6 +26,9 @@ public class Auction {
     private String status = "ACTIVE"; // ACTIVE, COMPLETED, CANCELLED
 
     @Column
+    private String auctionType; // IN_SEASON, OFF_SEASON
+
+    @Column
     private String description;
 
     // Constructors
@@ -57,6 +60,11 @@ public class Auction {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getAuctionType() { 
+        return auctionType != null ? auctionType : "IN_SEASON"; 
+    }
+    public void setAuctionType(String auctionType) { this.auctionType = auctionType; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

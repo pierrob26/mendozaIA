@@ -25,7 +25,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Disable CSRF for testing
             .authorizeHttpRequests((authz) -> authz
                 .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
-                .requestMatchers("/auction/**").hasRole("COMMISSIONER")
+                .requestMatchers("/auction/manage", "/auction/add-player", "/auction/remove-player/**", 
+                                 "/auction/add-released-player", "/auction/reject-released-player",
+                                 "/auction/toggle-auction-type").hasRole("COMMISSIONER")
+                .requestMatchers("/auction/view", "/auction/place-bid", "/auction/post-contract", 
+                                 "/auction/buyout-player").authenticated()
                 .anyRequest().authenticated()
             )
             .formLogin((form) -> form

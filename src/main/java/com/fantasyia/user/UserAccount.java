@@ -20,6 +20,18 @@ public class UserAccount {
     @Column(nullable = false)
     private String role; // Role to be selected during registration
 
+    @Column
+    private Double salaryCap; // $125M salary cap
+
+    @Column
+    private Double currentSalaryUsed; // Current salary committed
+
+    @Column
+    private Integer majorLeagueRosterCount; // Count of players on 40-man roster (max 40)
+
+    @Column
+    private Integer minorLeagueRosterCount; // Count of minor league players (max 25)
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -31,4 +43,40 @@ public class UserAccount {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public Double getSalaryCap() { 
+        return salaryCap != null ? salaryCap : 125.0; 
+    }
+    public void setSalaryCap(Double salaryCap) { this.salaryCap = salaryCap; }
+
+    public Double getCurrentSalaryUsed() { 
+        return currentSalaryUsed != null ? currentSalaryUsed : 0.0; 
+    }
+    public void setCurrentSalaryUsed(Double currentSalaryUsed) { this.currentSalaryUsed = currentSalaryUsed; }
+
+    public Integer getMajorLeagueRosterCount() { 
+        return majorLeagueRosterCount != null ? majorLeagueRosterCount : 0; 
+    }
+    public void setMajorLeagueRosterCount(Integer majorLeagueRosterCount) { this.majorLeagueRosterCount = majorLeagueRosterCount; }
+
+    public Integer getMinorLeagueRosterCount() { 
+        return minorLeagueRosterCount != null ? minorLeagueRosterCount : 0; 
+    }
+    public void setMinorLeagueRosterCount(Integer minorLeagueRosterCount) { this.minorLeagueRosterCount = minorLeagueRosterCount; }
+
+    public Double getAvailableCapSpace() {
+        return salaryCap - currentSalaryUsed;
+    }
+
+    public boolean canAffordPlayer(Double aas) {
+        return getAvailableCapSpace() >= aas;
+    }
+
+    public boolean hasRosterSpace(boolean isMinorLeaguer) {
+        if (isMinorLeaguer) {
+            return minorLeagueRosterCount < 25;
+        } else {
+            return majorLeagueRosterCount < 40;
+        }
+    }
 }

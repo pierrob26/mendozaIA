@@ -7,6 +7,13 @@
 </head>
 <body>
 <h1>Login</h1>
+<div th:if="${param.error}" style="color:red; margin-bottom: 15px;">
+    Invalid username or password.
+</div>
+<div th:if="${param.logout}" style="color:green; margin-bottom: 15px;">
+    You have been logged out successfully.
+</div>
+<div th:if="${success}" th:text="${success}" style="color:green; margin-bottom: 15px;"></div>
 <form th:action="@{/login}" method="post">
     <label>Username: <input type="text" name="username" required/></label><br/>
     <label>Password: <input type="password" name="password" required/></label><br/>

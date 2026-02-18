@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,6 +41,12 @@ public class AuctionController {
     
     @Autowired
     private ReleasedPlayerRepository releasedPlayerRepository;
+
+    @Autowired
+    private PendingContractRepository pendingContractRepository;
+
+    @Autowired
+    private AuctionService auctionService;
 
     @GetMapping("/manage")
     public String manageAuctions(Model model) {
@@ -74,6 +81,12 @@ public class AuctionController {
             // Get pending released players from the queue
             List<ReleasedPlayer> releasedPlayersQueue = releasedPlayerRepository.findByStatusOrderByReleasedAtDesc("PENDING");
             
+            // Get pending contracts
+            List<PendingContract> pendingContracts = pendingContractRepository.findByStatus("PENDING");
+            
+            // Check for expired contracts and handle them
+            handleExpiredContracts();
+            
             // Get players and their details for active items - with null check
             Map<Long, Player> playersMap = new java.util.HashMap<>();
             if (!activeItems.isEmpty()) {
@@ -93,11 +106,13 @@ public class AuctionController {
                 activeItems = validItems;
             }
             
-            // Get highest bids for each item
+            // Get highest bids and minimum next bid for each item
             Map<Long, Bid> highestBids = new java.util.HashMap<>();
+            Map<Long, Double> minimumNextBids = new java.util.HashMap<>();
             for (AuctionItem item : activeItems) {
                 Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
                 highestBids.put(item.getId(), highestBid);
+                minimumNextBids.put(item.getId(), item.getMinimumNextBid(mainAuction.getAuctionType()));
             }
             
             model.addAttribute("auction", mainAuction);
@@ -105,8 +120,10 @@ public class AuctionController {
             model.addAttribute("expiredItems", expiredItems);
             model.addAttribute("freeAgents", freeAgents);
             model.addAttribute("releasedPlayersQueue", releasedPlayersQueue);
+            model.addAttribute("pendingContracts", pendingContracts);
             model.addAttribute("playersMap", playersMap);
             model.addAttribute("highestBids", highestBids);
+            model.addAttribute("minimumNextBids", minimumNextBids);
             model.addAttribute("currentDateTime", LocalDateTime.now());
             
             return "auction-manage";
@@ -130,8 +147,9 @@ public class AuctionController {
                     LocalDateTime.now(), 
                     LocalDateTime.now().plusYears(1), // Always running
                     1L, // Default commissioner ID
-                    "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
+                    "In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments."
                 );
+                mainAuction.setAuctionType("IN_SEASON");
                 mainAuction = auctionRepository.save(mainAuction);
             }
             
@@ -162,9 +180,10 @@ public class AuctionController {
                 activeItems = validItems;
             }
             
-            // Get highest bids and bid counts
+            // Get highest bids, bid counts, and minimum next bids
             Map<Long, Bid> highestBids = new java.util.HashMap<>();
             Map<Long, Long> bidCounts = new java.util.HashMap<>();
+            Map<Long, Double> minimumNextBids = new java.util.HashMap<>();
             long totalBids = 0;
             
             for (AuctionItem item : activeItems) {
@@ -174,15 +193,23 @@ public class AuctionController {
                 Long count = bidRepository.countBidsForItem(item.getId());
                 bidCounts.put(item.getId(), count);
                 totalBids += count;
+                
+                minimumNextBids.put(item.getId(), item.getMinimumNextBid(mainAuction.getAuctionType()));
             }
             
             // Get user's recent bids if logged in
             Map<Long, List<Bid>> userBids = new java.util.HashMap<>();
-            if (user != null && !activeItems.isEmpty()) {
-                for (AuctionItem item : activeItems) {
-                    List<Bid> bids = bidRepository.findBidsByUserForItem(item.getId(), user.getId());
-                    userBids.put(item.getId(), bids);
+            List<PendingContract> userPendingContracts = new java.util.ArrayList<>();
+            if (user != null) {
+                if (!activeItems.isEmpty()) {
+                    for (AuctionItem item : activeItems) {
+                        List<Bid> bids = bidRepository.findBidsByUserForItem(item.getId(), user.getId());
+                        userBids.put(item.getId(), bids);
+                    }
                 }
+                
+                // Get user's pending contracts
+                userPendingContracts = pendingContractRepository.findByWinnerIdAndStatus(user.getId(), "PENDING");
             }
             
             model.addAttribute("auction", mainAuction);
@@ -191,7 +218,9 @@ public class AuctionController {
             model.addAttribute("highestBids", highestBids);
             model.addAttribute("bidCounts", bidCounts);
             model.addAttribute("totalBids", totalBids);
+            model.addAttribute("minimumNextBids", minimumNextBids);
             model.addAttribute("userBids", userBids);
+            model.addAttribute("userPendingContracts", userPendingContracts);
             model.addAttribute("currentUser", user);
             model.addAttribute("currentDateTime", LocalDateTime.now());
             
@@ -206,7 +235,7 @@ public class AuctionController {
 
     @PostMapping("/add-player")
     public String addPlayerToAuction(@RequestParam Long playerId,
-                                   @RequestParam(defaultValue = "1.0") Double startingBid,
+                                   @RequestParam(defaultValue = "0.5") Double startingBid,
                                    RedirectAttributes redirectAttributes) {
         
         // Check commissioner permissions
@@ -237,12 +266,21 @@ public class AuctionController {
                 return "redirect:/auction/manage";
             }
             
+            // Set minimum bid based on player type
+            boolean isMinorLeaguer = player.getIsMinorLeaguer() || player.getIsRookie();
+            double minBid = isMinorLeaguer ? 0.1 : 0.5; // $100K for minors, $500K for MLB
+            
+            if (startingBid < minBid) {
+                startingBid = minBid;
+            }
+            
             // Create auction item
-            AuctionItem auctionItem = new AuctionItem(playerId, mainAuction.getId(), startingBid);
+            AuctionItem auctionItem = new AuctionItem(playerId, mainAuction.getId(), startingBid, isMinorLeaguer, user.getId());
             auctionItemRepository.save(auctionItem);
             
             redirectAttributes.addFlashAttribute("success", 
-                "Player " + player.getName() + " added to auction with starting bid $" + startingBid);
+                "Player " + player.getName() + " added to auction with starting bid $" + 
+                String.format("%.1fM", startingBid));
             
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error adding player to auction: " + e.getMessage());
@@ -266,57 +304,21 @@ public class AuctionController {
         }
 
         try {
-            // Get auction item
-            AuctionItem auctionItem = auctionItemRepository.findById(auctionItemId).orElse(null);
-            if (auctionItem == null || !"ACTIVE".equals(auctionItem.getStatus())) {
-                redirectAttributes.addFlashAttribute("error", "Auction item not found or not active");
-                return "redirect:/auction/view";
+            // Use the service to place bid with all validation
+            AuctionService.BidResult result = auctionService.placeBid(auctionItemId, user.getId(), bidAmount);
+            
+            if (result.isSuccess()) {
+                redirectAttributes.addFlashAttribute("success", result.getMessage());
+            } else {
+                redirectAttributes.addFlashAttribute("error", result.getMessage());
             }
-            
-            // Check minimum bid
-            Double minBid = auctionItem.getCurrentBid() != null ? 
-                auctionItem.getCurrentBid() + 1.0 : auctionItem.getStartingBid();
-            
-            if (bidAmount < minBid) {
-                redirectAttributes.addFlashAttribute("error", 
-                    "Bid must be at least $" + minBid);
-                return "redirect:/auction/view";
-            }
-            
-            // Create bid
-            Bid bid = new Bid(auctionItemId, user.getId(), bidAmount);
-            bidRepository.save(bid);
-            
-            // Update auction item
-            if (auctionItem.getFirstBidTime() == null) {
-                auctionItem.setFirstBidTime(LocalDateTime.now());
-                auctionItem.setEndTime(LocalDateTime.now().plusHours(24));
-            }
-            auctionItem.setCurrentBid(bidAmount);
-            auctionItem.setCurrentBidderId(user.getId());
-            auctionItemRepository.save(auctionItem);
-            
-            // Mark previous bids as outbid
-            List<Bid> previousBids = bidRepository.findByAuctionItemIdOrderByAmountDesc(auctionItemId);
-            for (Bid prevBid : previousBids) {
-                if (!prevBid.getId().equals(bid.getId())) {
-                    prevBid.setStatus("OUTBID");
-                    bidRepository.save(prevBid);
-                }
-            }
-            bid.setStatus("WINNING");
-            bidRepository.save(bid);
-            
-            Player player = playerRepository.findById(auctionItem.getPlayerId()).orElse(null);
-            redirectAttributes.addFlashAttribute("success", 
-                "Bid placed successfully for " + (player != null ? player.getName() : "player") + 
-                " - $" + bidAmount);
             
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error placing bid: " + e.getMessage());
+            e.printStackTrace();
         }
         
-        return "redirect:/auction/manage";
+        return "redirect:/auction/view";
     }
 
     @PostMapping("/add-released-player")
@@ -465,38 +467,103 @@ public class AuctionController {
                 return "redirect:/auction/manage";
             }
             
-            // Check if minimum time has elapsed since first bid
-            if (auctionItem.getFirstBidTime() != null && !auctionItem.canBeRemoved()) {
-                long hoursRemaining = auctionItem.getTimeRemainingHours();
-                redirectAttributes.addFlashAttribute("error", 
-                    "Cannot remove player yet. Must wait " + hoursRemaining + " more hours after first bid.");
+            // Get auction to check type
+            Auction auction = auctionRepository.findById(auctionItem.getAuctionId()).orElse(null);
+            if (auction == null) {
+                redirectAttributes.addFlashAttribute("error", "Auction not found");
                 return "redirect:/auction/manage";
             }
             
-            // If there were bids, award player to highest bidder
+            // Use service to award player (validates timing rules)
             if (auctionItem.getCurrentBidderId() != null) {
-                Player player = playerRepository.findById(auctionItem.getPlayerId()).orElse(null);
-                if (player != null) {
-                    player.setOwnerId(auctionItem.getCurrentBidderId());
-                    player.setContractLength(1); // Default 1 year contract
-                    player.setContractAmount(auctionItem.getCurrentBid());
-                    playerRepository.save(player);
+                AuctionService.ContractResult result = auctionService.awardPlayer(itemId);
+                
+                if (result.isSuccess()) {
+                    redirectAttributes.addFlashAttribute("success", result.getMessage());
+                } else {
+                    redirectAttributes.addFlashAttribute("error", result.getMessage());
                 }
-                auctionItem.setStatus("SOLD");
-                redirectAttributes.addFlashAttribute("success", 
-                    "Player awarded to highest bidder for $" + auctionItem.getCurrentBid());
             } else {
+                // No bids, just remove
                 auctionItem.setStatus("REMOVED");
+                auctionItemRepository.save(auctionItem);
                 redirectAttributes.addFlashAttribute("success", "Player removed from auction (no bids)");
             }
             
-            auctionItemRepository.save(auctionItem);
-            
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error removing player: " + e.getMessage());
+            e.printStackTrace();
         }
         
         return "redirect:/auction/manage";
+    }
+
+    @PostMapping("/post-contract")
+    public String postContract(@RequestParam Long pendingContractId,
+                              @RequestParam Integer contractYears,
+                              RedirectAttributes redirectAttributes) {
+        
+        // Get current user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            // Use service to post contract with all validation
+            AuctionService.ContractResult result = auctionService.postContract(pendingContractId, user.getId(), contractYears);
+            
+            if (result.isSuccess()) {
+                redirectAttributes.addFlashAttribute("success", result.getMessage());
+            } else {
+                redirectAttributes.addFlashAttribute("error", result.getMessage());
+            }
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error posting contract: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return "redirect:/auction/view";
+    }
+
+    @PostMapping("/buyout-player")
+    public String buyoutPlayer(@RequestParam Long pendingContractId,
+                              RedirectAttributes redirectAttributes) {
+        
+        // Get current user
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            // Use service to process buyout
+            AuctionService.ContractResult result = auctionService.buyoutPlayer(pendingContractId, user.getId());
+            
+            if (result.isSuccess()) {
+                redirectAttributes.addFlashAttribute("success", result.getMessage());
+            } else {
+                redirectAttributes.addFlashAttribute("error", result.getMessage());
+            }
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error processing buyout: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return "redirect:/auction/view";
+    }
+
+    // Helper methods
+    private void handleExpiredContracts() {
+        auctionService.processExpiredContracts();
     }
 
     // Helper methods
@@ -506,19 +573,56 @@ public class AuctionController {
             return activeAuctions.get(0);
         }
         
-        // Create main auction
+        // Create main auction - default to IN_SEASON
         Auction mainAuction = new Auction(
             "Main Player Auction", 
             LocalDateTime.now(), 
             LocalDateTime.now().plusYears(1), // Always running
             commissionerId,
-            "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
+            "In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments based on time elapsed."
         );
+        mainAuction.setAuctionType("IN_SEASON");
         return auctionRepository.save(mainAuction);
     }
     
     private Auction getMainAuction() {
         List<Auction> activeAuctions = auctionRepository.findByStatus("ACTIVE");
         return activeAuctions.isEmpty() ? null : activeAuctions.get(0);
+    }
+
+    @PostMapping("/toggle-auction-type")
+    public String toggleAuctionType(RedirectAttributes redirectAttributes) {
+        // Check commissioner permissions
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+        
+        if (user == null || !"COMMISSIONER".equals(user.getRole())) {
+            redirectAttributes.addFlashAttribute("error", "Only commissioners can change auction type");
+            return "redirect:/auction/manage";
+        }
+
+        try {
+            Auction mainAuction = getOrCreateMainAuction(user.getId());
+            
+            // Toggle between IN_SEASON and OFF_SEASON
+            if ("IN_SEASON".equals(mainAuction.getAuctionType())) {
+                mainAuction.setAuctionType("OFF_SEASON");
+                mainAuction.setDescription("Off-Season Free Agency: Players require 72 hours after first bid. Extended minimum bid increments.");
+                redirectAttributes.addFlashAttribute("success", "Auction type changed to Off-Season Free Agency");
+            } else {
+                mainAuction.setAuctionType("IN_SEASON");
+                mainAuction.setDescription("In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments based on time elapsed.");
+                redirectAttributes.addFlashAttribute("success", "Auction type changed to In-Season Free Agency");
+            }
+            
+            auctionRepository.save(mainAuction);
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error changing auction type: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return "redirect:/auction/manage";
     }
 }
