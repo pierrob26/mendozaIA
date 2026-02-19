@@ -65,43 +65,77 @@ public class AuctionController {
             
             // Get all auction items for this auction
             List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
+            if (activeItems == null) {
+                activeItems = new java.util.ArrayList<>();
+            }
+            
             List<AuctionItem> expiredItems = auctionItemRepository.findExpiredItems(mainAuction.getId(), LocalDateTime.now().minusHours(24));
+            if (expiredItems == null) {
+                expiredItems = new java.util.ArrayList<>();
+            }
             
             // Get free agents available for adding to auction
             List<Player> freeAgents = playerRepository.findByOwnerIdIsNull();
+            if (freeAgents == null) {
+                freeAgents = new java.util.ArrayList<>();
+            }
             
             // Remove players already in auction
-            List<Long> auctionPlayerIds = activeItems.stream()
-                .map(AuctionItem::getPlayerId)
-                .collect(Collectors.toList());
-            freeAgents = freeAgents.stream()
-                .filter(player -> !auctionPlayerIds.contains(player.getId()))
-                .collect(Collectors.toList());
+            if (!activeItems.isEmpty()) {
+                List<Long> auctionPlayerIds = activeItems.stream()
+                    .map(AuctionItem::getPlayerId)
+                    .filter(id -> id != null)
+                    .collect(Collectors.toList());
+                freeAgents = freeAgents.stream()
+                    .filter(player -> player != null && !auctionPlayerIds.contains(player.getId()))
+                    .collect(Collectors.toList());
+            }
             
             // Get pending released players from the queue
             List<ReleasedPlayer> releasedPlayersQueue = releasedPlayerRepository.findByStatusOrderByReleasedAtDesc("PENDING");
+            if (releasedPlayersQueue == null) {
+                releasedPlayersQueue = new java.util.ArrayList<>();
+            }
             
             // Get pending contracts
             List<PendingContract> pendingContracts = pendingContractRepository.findByStatus("PENDING");
+            if (pendingContracts == null) {
+                pendingContracts = new java.util.ArrayList<>();
+            }
             
             // Check for expired contracts and handle them
-            handleExpiredContracts();
+            try {
+                handleExpiredContracts();
+            } catch (Exception e) {
+                System.err.println("Warning: Error handling expired contracts: " + e.getMessage());
+            }
             
-            // Get players and their details for active items - with null check
+            // Get players and their details for active items - with comprehensive null checks
             Map<Long, Player> playersMap = new java.util.HashMap<>();
             if (!activeItems.isEmpty()) {
                 List<Long> playerIds = activeItems.stream()
                     .map(AuctionItem::getPlayerId)
+                    .filter(id -> id != null)
                     .collect(Collectors.toList());
                 
-                List<Player> players = playerRepository.findAllById(playerIds);
-                for (Player player : players) {
-                    playersMap.put(player.getId(), player);
+                if (!playerIds.isEmpty()) {
+                    try {
+                        List<Player> players = playerRepository.findAllById(playerIds);
+                        if (players != null) {
+                            for (Player player : players) {
+                                if (player != null && player.getId() != null) {
+                                    playersMap.put(player.getId(), player);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Warning: Error loading players: " + e.getMessage());
+                    }
                 }
                 
                 // Filter out auction items for players that don't exist
                 List<AuctionItem> validItems = activeItems.stream()
-                    .filter(item -> playersMap.containsKey(item.getPlayerId()))
+                    .filter(item -> item != null && item.getPlayerId() != null && playersMap.containsKey(item.getPlayerId()))
                     .collect(Collectors.toList());
                 activeItems = validItems;
             }
@@ -110,9 +144,18 @@ public class AuctionController {
             Map<Long, Bid> highestBids = new java.util.HashMap<>();
             Map<Long, Double> minimumNextBids = new java.util.HashMap<>();
             for (AuctionItem item : activeItems) {
-                Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
-                highestBids.put(item.getId(), highestBid);
-                minimumNextBids.put(item.getId(), item.getMinimumNextBid(mainAuction.getAuctionType()));
+                if (item != null && item.getId() != null) {
+                    try {
+                        Bid highestBid = bidRepository.findHighestBidForItem(item.getId());
+                        highestBids.put(item.getId(), highestBid);
+                        
+                        Double minBid = item.getMinimumNextBid(mainAuction.getAuctionType());
+                        minimumNextBids.put(item.getId(), minBid != null ? minBid : 0.5);
+                    } catch (Exception e) {
+                        System.err.println("Warning: Error getting bid info for item " + item.getId() + ": " + e.getMessage());
+                        minimumNextBids.put(item.getId(), 0.5);
+                    }
+                }
             }
             
             model.addAttribute("auction", mainAuction);
@@ -130,7 +173,19 @@ public class AuctionController {
         } catch (Exception e) {
             System.err.println("=== ERROR IN MANAGE AUCTIONS ===");
             e.printStackTrace();
-            model.addAttribute("error", "Error loading auction management page: " + e.getMessage());
+            
+            // Initialize all collections as empty to prevent template errors
+            model.addAttribute("activeItems", new java.util.ArrayList<>());
+            model.addAttribute("expiredItems", new java.util.ArrayList<>());
+            model.addAttribute("freeAgents", new java.util.ArrayList<>());
+            model.addAttribute("releasedPlayersQueue", new java.util.ArrayList<>());
+            model.addAttribute("pendingContracts", new java.util.ArrayList<>());
+            model.addAttribute("playersMap", new java.util.HashMap<>());
+            model.addAttribute("highestBids", new java.util.HashMap<>());
+            model.addAttribute("minimumNextBids", new java.util.HashMap<>());
+            model.addAttribute("currentDateTime", LocalDateTime.now());
+            model.addAttribute("error", "Error loading auction management page: " + e.getMessage() + ". Please check the logs and try again.");
+            
             return "auction-manage";
         }
     }
@@ -267,20 +322,28 @@ public class AuctionController {
             }
             
             // Set minimum bid based on player type
+            // MLB players: $500K minimum
+            // Minor leaguers: $100K minimum
             boolean isMinorLeaguer = player.getIsMinorLeaguer() || player.getIsRookie();
             double minBid = isMinorLeaguer ? 0.1 : 0.5; // $100K for minors, $500K for MLB
             
             if (startingBid < minBid) {
                 startingBid = minBid;
+                redirectAttributes.addFlashAttribute("info", 
+                    String.format("Starting bid adjusted to minimum: $%.1fM for %s players", 
+                        minBid, isMinorLeaguer ? "minor league" : "MLB"));
             }
             
             // Create auction item
             AuctionItem auctionItem = new AuctionItem(playerId, mainAuction.getId(), startingBid, isMinorLeaguer, user.getId());
             auctionItemRepository.save(auctionItem);
             
+            String playerType = isMinorLeaguer ? "minor league" : "MLB";
+            String increment = isMinorLeaguer ? "$100K" : "$1M";
+            
             redirectAttributes.addFlashAttribute("success", 
-                "Player " + player.getName() + " added to auction with starting bid $" + 
-                String.format("%.1fM", startingBid));
+                String.format("Player %s added to auction. Starting bid: $%.1fM (%s player, %s increments)", 
+                    player.getName(), startingBid, playerType, increment));
             
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error adding player to auction: " + e.getMessage());

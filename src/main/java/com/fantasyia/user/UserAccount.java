@@ -21,7 +21,7 @@ public class UserAccount {
     private String role; // Role to be selected during registration
 
     @Column
-    private Double salaryCap; // $125M salary cap
+    private Double salaryCap; // $100M salary cap
 
     @Column
     private Double currentSalaryUsed; // Current salary committed
@@ -32,6 +32,7 @@ public class UserAccount {
     @Column
     private Integer minorLeagueRosterCount; // Count of minor league players (max 25)
 
+    // Basic getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -45,7 +46,7 @@ public class UserAccount {
     public void setRole(String role) { this.role = role; }
 
     public Double getSalaryCap() { 
-        return salaryCap != null ? salaryCap : 125.0; 
+        return salaryCap != null ? salaryCap : 100.0; 
     }
     public void setSalaryCap(Double salaryCap) { this.salaryCap = salaryCap; }
 
@@ -65,18 +66,18 @@ public class UserAccount {
     public void setMinorLeagueRosterCount(Integer minorLeagueRosterCount) { this.minorLeagueRosterCount = minorLeagueRosterCount; }
 
     public Double getAvailableCapSpace() {
-        return salaryCap - currentSalaryUsed;
+        return getSalaryCap() - getCurrentSalaryUsed();
     }
 
     public boolean canAffordPlayer(Double aas) {
-        return getAvailableCapSpace() >= aas;
+        return aas != null && getAvailableCapSpace() >= aas;
     }
 
     public boolean hasRosterSpace(boolean isMinorLeaguer) {
         if (isMinorLeaguer) {
-            return minorLeagueRosterCount < 25;
+            return getMinorLeagueRosterCount() < 25;
         } else {
-            return majorLeagueRosterCount < 40;
+            return getMajorLeagueRosterCount() < 40;
         }
     }
 }

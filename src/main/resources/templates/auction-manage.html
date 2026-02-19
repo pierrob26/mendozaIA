@@ -299,14 +299,14 @@
             <div class="auction-items-grid">
                 <div th:each="item : ${activeItems}" 
                      class="auction-item"
-                     th:classappend="${item.firstBidTime != null ? 'has-bids' : ''} + ${item.canBeRemoved() ? ' can-remove' : ''}">
+                     th:classappend="${item.firstBidTime != null ? 'has-bids' : ''} + ${item.canBeRemoved(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON') ? ' can-remove' : ''}">
                     
                     <div class="player-info">
                         <div>
-                            <div class="player-name" th:text="${playersMap.containsKey(item.playerId) ? playersMap[item.playerId].name : 'Unknown Player'}">Player Name</div>
+                            <div class="player-name" th:text="${playersMap.containsKey(item.playerId) ? playersMap.get(item.playerId).name : 'Unknown Player'}">Player Name</div>
                             <div class="player-details" th:if="${playersMap.containsKey(item.playerId)}">
-                                <span th:text="${playersMap[item.playerId].position}">Position</span> • 
-                                <span th:text="${playersMap[item.playerId].team}">Team</span>
+                                <span th:text="${playersMap.get(item.playerId).position}">Position</span> • 
+                                <span th:text="${playersMap.get(item.playerId).team}">Team</span>
                             </div>
                             <div class="player-details" th:unless="${playersMap.containsKey(item.playerId)}" style="color: #dc3545;">
                                 Player data missing - may have been deleted
@@ -319,8 +319,8 @@
                             <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span></div>
                             <div style="font-size: 0.9em; color: #6c757d;">
                                 Current High Bid
-                                <span th:if="${highestBids[item.id] != null}">
-                                    • <span th:text="${#temporals.format(highestBids[item.id].bidTime, 'MMM d, h:mm a')}">Time</span>
+                                <span th:if="${highestBids.get(item.id) != null}">
+                                    • <span th:text="${#temporals.format(highestBids.get(item.id).bidTime, 'MMM d, h:mm a')}">Time</span>
                                 </span>
                             </div>
                         </div>
@@ -332,11 +332,11 @@
                     
                     <div class="time-info">
                         <div th:if="${item.firstBidTime != null}">
-                            <div th:if="${!item.canBeRemoved()}">
-                                🕐 <span th:text="${item.timeRemainingHours}">0</span> hours remaining
+                            <div th:if="${!item.canBeRemoved(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON')}">
+                                🕐 <span th:text="${item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON')}">0</span> hours remaining
                                 <br><small>First bid: <span th:text="${#temporals.format(item.firstBidTime, 'MMM d, h:mm a')}">Time</span></small>
                             </div>
-                            <div th:if="${item.canBeRemoved()}" style="color: #856404;">
+                            <div th:if="${item.canBeRemoved(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON')}" style="color: #856404;">
                                 ✅ Ready to remove (24+ hours elapsed)
                             </div>
                         </div>
@@ -351,13 +351,13 @@
                               style="display: inline;">
                             <button type="submit" 
                                     class="remove-btn"
-                                    th:disabled="${item.firstBidTime != null and !item.canBeRemoved()}">
+                                    th:disabled="${item.firstBidTime != null and !item.canBeRemoved(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON')}">
                                 <span th:if="${item.currentBid != null}">Award to Winner</span>
                                 <span th:if="${item.currentBid == null}">Remove from Auction</span>
                             </button>
                         </form>
                         
-                        <div th:if="${item.firstBidTime != null and !item.canBeRemoved()}" 
+                        <div th:if="${item.firstBidTime != null and !item.canBeRemoved(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON')}" 
                              style="font-size: 0.8em; color: #6c757d; margin-top: 5px;">
                             Cannot remove until 24 hours after first bid
                         </div>
@@ -368,13 +368,20 @@
         
         <!-- Instructions -->
         <div class="section" style="background-color: #f8f9fa;">
-            <h3>How the Always-Running Auction Works</h3>
+            <h3>Free Agency Auction Rules</h3>
             <ul style="line-height: 1.6;">
-                <li><strong>Add Players:</strong> Select free agents and add them to the auction with a starting bid</li>
-                <li><strong>24-Hour Rule:</strong> Once the first bid is placed, the player must stay in auction for at least 24 hours</li>
-                <li><strong>Remove Players:</strong> After 24 hours have elapsed since the first bid, you can award the player to the highest bidder</li>
-                <li><strong>No Bids:</strong> Players without any bids can be removed at any time</li>
-                <li><strong>Winning:</strong> When you remove a player with bids, they are automatically awarded to the highest bidder with a 1-year contract</li>
+                <li><strong>Minimum Bids:</strong> 
+                    <ul>
+                        <li>MLB Players: $500K minimum, $1M increments</li>
+                        <li>Minor League Players: $100K minimum, $100K increments</li>
+                    </ul>
+                </li>
+                <li><strong>Bidding:</strong> Each bid resets the timer - auction must stand 24 hours (in-season) or 72 hours (off-season) after the LAST bid</li>
+                <li><strong>Contract Posting:</strong> Winners have 48 hours to post a contract or pay buyout fee (half of winning bid)</li>
+                <li><strong>Salary Cap:</strong> Bids cannot exceed the $100M salary cap</li>
+                <li><strong>Roster Limits:</strong> 40 MLB players max, 25 minor league players max</li>
+                <li><strong>No Bid Deletion:</strong> Once you bid or nominate a player, you cannot delete that bid</li>
+                <li><strong>Contract Terms:</strong> 1-5 years (players under $750K limited to 2 years max)</li>
             </ul>
         </div>
     </div>

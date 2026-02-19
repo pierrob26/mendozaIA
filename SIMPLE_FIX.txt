@@ -1,0 +1,51 @@
+═══════════════════════════════════════════════════════════════════
+                        🚨 500 ERROR - FIX THIS NOW 🚨
+═══════════════════════════════════════════════════════════════════
+
+COPY AND RUN THIS COMMAND:
+───────────────────────────────────────────────────────────────────
+
+docker compose down && mvn clean package -DskipTests && docker compose up --build -d
+
+───────────────────────────────────────────────────────────────────
+
+That's it! Wait 2-3 minutes, then go to: http://localhost:8080
+
+═══════════════════════════════════════════════════════════════════
+
+WHY THIS FIXES IT:
+• Docker is running OLD code (before RegistrationController was disabled)
+• This command: stops → cleans → rebuilds → restarts with NEW code
+• The duplicate controller conflict will be gone
+
+═══════════════════════════════════════════════════════════════════
+
+WHAT YOU'LL SEE:
+1. "Stopping..." - Containers shutting down
+2. Maven build output (30-60 seconds)
+3. "Building image..." - Docker building (30-60 seconds)
+4. "Started..." - App starting (20-30 seconds)
+
+═══════════════════════════════════════════════════════════════════
+
+CHECK IT WORKED:
+
+docker compose ps
+# Should show: app and db both running
+
+docker compose logs --tail=20 app
+# Should see: "Started FantasyIaApplication"
+# Should NOT see: "Ambiguous mapping"
+
+═══════════════════════════════════════════════════════════════════
+
+STILL BROKEN? Try this:
+
+docker compose down
+docker system prune -f
+mvn clean
+rm -rf target/
+mvn package
+docker compose up --build -d
+
+═══════════════════════════════════════════════════════════════════

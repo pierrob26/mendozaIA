@@ -10,7 +10,8 @@ package com.fantasyia.user;
  * 
  * @deprecated Use com.fantasyia.controller.RegisterController instead
  */
-public class RegistrationController_DISABLED_BACKUP {
+@Deprecated
+class RegistrationController_DISABLED_BACKUP {
 
     // ALL CODE DISABLED - USE RegisterController INSTEAD
     

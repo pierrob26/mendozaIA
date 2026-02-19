@@ -1,4 +1,55 @@
+# .dockerignore - Exclude unnecessary files from Docker build context
+
+# Version control
 .git
-.idea
+.gitignore
+
+# IDE files
+.idea/
 *.iml
+.vscode/
+.eclipse/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven
+target/classes
+target/test-classes
+target/maven-archiver
+target/maven-status
+target/surefire-reports
+
+# Keep only the final JAR
+!target/fantasyia-0.0.1-SNAPSHOT.jar
+
+# Logs
 *.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Scripts (not needed in container)
+*.sh
+!start_webapp.sh
+
+# Docker files (except Dockerfile)
+docker-compose*.yml
+.dockerignore
+
+# Node modules (if any)
+node_modules/
+
+# Test files
+src/test/
+
+# Configuration overrides
+application-local.properties
+application-dev.properties

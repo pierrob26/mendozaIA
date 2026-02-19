@@ -154,75 +154,34 @@ public class AuctionItem {
         this.currentMinimumIncrement = currentMinimumIncrement; 
     }
 
-    // Helper methods to calculate minimum bid increment based on time and auction type
+    // Helper methods to calculate minimum bid increment - simplified structure
     public Double getMinimumBidIncrement(String auctionType) {
         if (lastBidTime == null) {
             return 0.0; // No increment needed if no bids yet
         }
 
-        long hoursSinceLastBid = Duration.between(lastBidTime, LocalDateTime.now()).toHours();
-        double calculatedIncrement;
-
-        if ("IN_SEASON".equals(auctionType)) {
-            // In-Season Free Agency rules
-            if (isMinorLeaguer) {
-                if (hoursSinceLastBid >= 16) {
-                    calculatedIncrement = 0.5; // $500K
-                } else if (hoursSinceLastBid >= 8) {
-                    calculatedIncrement = 0.25; // $250K
-                } else {
-                    calculatedIncrement = 0.1; // $100K
-                }
-            } else {
-                if (hoursSinceLastBid >= 16) {
-                    calculatedIncrement = 1.5; // $1.5M
-                } else if (hoursSinceLastBid >= 8) {
-                    calculatedIncrement = 1.0; // $1M
-                } else {
-                    calculatedIncrement = 0.5; // $500K
-                }
-            }
+        // Simple increment structure
+        if (getIsMinorLeaguer()) {
+            return 0.1; // $100K for minor leaguers
         } else {
-            // Off-Season Free Agency rules
-            if (isMinorLeaguer) {
-                if (hoursSinceLastBid >= 48) {
-                    calculatedIncrement = 0.5; // $500K
-                } else if (hoursSinceLastBid >= 24) {
-                    calculatedIncrement = 0.25; // $250K
-                } else {
-                    calculatedIncrement = 0.1; // $100K
-                }
-            } else {
-                if (hoursSinceLastBid >= 48) {
-                    calculatedIncrement = 2.0; // $2M
-                } else if (hoursSinceLastBid >= 24) {
-                    calculatedIncrement = 1.0; // $1M
-                } else {
-                    calculatedIncrement = 0.5; // $500K
-                }
-            }
-        }
-
-        // Rule 5: Once the minimum increases, it doesn't go back down
-        if (calculatedIncrement > currentMinimumIncrement) {
-            // Lock in the new higher minimum
-            return calculatedIncrement;
-        } else {
-            // Use the previously locked-in minimum
-            return currentMinimumIncrement;
+            return 1.0; // $1M for MLB players
         }
     }
 
     public void updateMinimumIncrement(String auctionType) {
+        // With fixed increments, no need to track changing minimums
         double newIncrement = getMinimumBidIncrement(auctionType);
-        if (newIncrement > currentMinimumIncrement) {
-            this.currentMinimumIncrement = newIncrement;
-        }
+        this.currentMinimumIncrement = newIncrement;
     }
 
     public Double getMinimumNextBid(String auctionType) {
         if (currentBid == null) {
-            return startingBid;
+            // Set starting bid based on player type
+            if (getIsMinorLeaguer()) {
+                return 0.1; // $100K for minor leaguers
+            } else {
+                return 0.5; // $500K for MLB players
+            }
         }
         return currentBid + getMinimumBidIncrement(auctionType);
     }

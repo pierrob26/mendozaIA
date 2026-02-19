@@ -135,27 +135,6 @@
             cursor: not-allowed;
         }
         
-        .quick-bid-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin: 10px 0;
-        }
-        
-        .quick-bid-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-        }
-        
-        .quick-bid-btn:hover {
-            background-color: #1e7e34;
-        }
-        
         .time-info {
             background: #f8f9fa;
             padding: 15px;
@@ -249,10 +228,6 @@
         }
     </style>
     <script>
-        function setQuickBid(itemId, amount) {
-            document.getElementById('bidAmount_' + itemId).value = amount;
-        }
-        
         function validateBid(form, minBid) {
             const bidAmount = parseFloat(form.bidAmount.value);
             if (bidAmount < minBid) {
@@ -323,13 +298,13 @@
             <div class="auction-items-grid">
                 <div th:each="item : ${activeItems}" 
                      class="auction-item"
-                     th:classappend="${item.timeRemainingHours >= 0 and item.timeRemainingHours <= 2 ? 'hot' : ''}">
+                     th:classappend="${item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON') >= 0 and item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON') <= 2 ? 'hot' : ''}">
                     
                     <div class="player-info">
-                        <div class="player-name" th:text="${playersMap.containsKey(item.playerId) ? playersMap[item.playerId].name : 'Unknown Player'}">Player Name</div>
+                        <div class="player-name" th:text="${playersMap.containsKey(item.playerId) ? playersMap.get(item.playerId).name : 'Unknown Player'}">Player Name</div>
                         <div class="player-details" th:if="${playersMap.containsKey(item.playerId)}">
-                            <strong><span th:text="${playersMap[item.playerId].position}">Position</span></strong> • 
-                            <span th:text="${playersMap[item.playerId].team}">Team</span>
+                            <strong><span th:text="${playersMap.get(item.playerId).position}">Position</span></strong> • 
+                            <span th:text="${playersMap.get(item.playerId).team}">Team</span>
                         </div>
                         <div class="player-details" th:unless="${playersMap.containsKey(item.playerId)}" style="color: #dc3545;">
                             Player data missing
@@ -341,8 +316,8 @@
                             <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span></div>
                             <div class="bid-details">
                                 Current High Bid
-                                <span th:if="${bidCounts[item.id] > 1}">
-                                    • <span th:text="${bidCounts[item.id]}">0</span> bids
+                                <span th:if="${bidCounts.get(item.id) != null and bidCounts.get(item.id) > 1}">
+                                    • <span th:text="${bidCounts.get(item.id)}">0</span> bids
                                 </span>
                             </div>
                         </div>
@@ -364,19 +339,6 @@
                                        step="1" required>
                                 <button type="submit" class="bid-btn" th:onclick="'return validateBid(' + ${item.id} + ')'">Place Bid</button>
                             </form>
-                            
-                            <!-- Quick Bid Buttons -->
-                            <div class="quick-bid-buttons">
-                                <button type="button" class="quick-bid-btn" 
-                                        th:onclick="'setQuickBid(' + ${item.id} + ', ' + ${item.currentBid != null ? item.currentBid + 5 : item.startingBid + 4} + ')'"
-                                        >+$5</button>
-                                <button type="button" class="quick-bid-btn" 
-                                        th:onclick="'setQuickBid(' + ${item.id} + ', ' + ${item.currentBid != null ? item.currentBid + 10 : item.startingBid + 9} + ')'"
-                                        >+$10</button>
-                                <button type="button" class="quick-bid-btn" 
-                                        th:onclick="'setQuickBid(' + ${item.id} + ', ' + ${item.currentBid != null ? item.currentBid + 25 : item.startingBid + 24} + ')'"
-                                        >+$25</button>
-                            </div>
                         </div>
                     </div>
                     
@@ -384,11 +346,11 @@
                     <div class="time-info">
                         <div th:if="${item.firstBidTime != null}">
                             <div class="time-remaining" 
-                                 th:classappend="${item.timeRemainingHours <= 2 ? 'countdown-urgent' : ''}">
-                                <span th:if="${item.timeRemainingHours > 0}">
-                                    🕐 <span th:text="${item.timeRemainingHours}">0</span> hours remaining
+                                 th:classappend="${item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON') <= 2 ? 'countdown-urgent' : ''}">
+                                <span th:if="${item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON') > 0}">
+                                    🕐 <span th:text="${item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON')}">0</span> hours remaining
                                 </span>
-                                <span th:if="${item.timeRemainingHours <= 0}">
+                                <span th:if="${item.getTimeRemainingHours(auction?.auctionType != null ? auction.auctionType : 'IN_SEASON') <= 0}">
                                     ⏰ Eligible for removal
                                 </span>
                             </div>
@@ -402,11 +364,11 @@
                     </div>
                     
                     <!-- User's Bid Status -->
-                    <div th:if="${currentUser != null and userBids != null and userBids[item.id] != null and !userBids[item.id].isEmpty()}" 
+                    <div th:if="${currentUser != null and userBids != null and userBids.get(item.id) != null and !userBids.get(item.id).isEmpty()}" 
                          class="bid-history">
                         <h5>Your Bid History</h5>
                         <div class="bid-list">
-                            <div th:each="bid : ${userBids[item.id]}" class="bid-entry">
+                            <div th:each="bid : ${userBids.get(item.id)}" class="bid-entry">
                                 <span>$<span th:text="${#numbers.formatDecimal(bid.amount, 0, 0)}">0</span></span>
                                 <span th:text="${#temporals.format(bid.bidTime, 'MMM d, h:mm a')}">Time</span>
                                 <span th:if="${bid.status == 'WINNING'}" style="color: #28a745; font-weight: bold;">WINNING</span>
@@ -427,7 +389,7 @@
                     <ul>
                         <li>Place bids on any available player</li>
                         <li>Minimum bid increment: $1</li>
-                        <li>Use quick bid buttons for convenience</li>
+                        <li>Enter your desired bid amount</li>
                         <li>You can bid multiple times</li>
                     </ul>
                 </div>

@@ -56,8 +56,7 @@ public class TeamController {
                       @RequestParam(required = false) Integer maxContract,
                       @RequestParam(required = false) Double minSalary,
                       @RequestParam(required = false) Double maxSalary) {
-        
-        // Get current authenticated user
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -66,7 +65,7 @@ public class TeamController {
             return "redirect:/login";
         }
 
-        // Get players with filters
+
         List<Player> players = playerRepository.findPlayersWithFilters(
             user.getId(), position, minContract, maxContract, minSalary, maxSalary
         );
@@ -87,7 +86,8 @@ public class TeamController {
                            @RequestParam String position,
                            @RequestParam String team,
                            @RequestParam(required = false) Integer contractLength,
-                           @RequestParam(required = false) Double contractAmount) {
+                           @RequestParam(required = false) Double contractAmount,
+                           RedirectAttributes redirectAttributes) {
         
         // Get current authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -98,12 +98,56 @@ public class TeamController {
             return "redirect:/login";
         }
 
-        // Use 0 as default if contract values are not provided
-        Integer finalContractLength = (contractLength != null) ? contractLength : 0;
-        Double finalContractAmount = (contractAmount != null) ? contractAmount : 0.0;
+        // Validate required fields
+        if (name == null || name.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Player name is required");
+            return "redirect:/team";
+        }
         
-        Player player = new Player(name, position, team, finalContractLength, finalContractAmount, user.getId());
-        playerRepository.save(player);
+        if (position == null || position.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Player position is required");
+            return "redirect:/team";
+        }
+        
+        if (team == null || team.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "MLB team is required");
+            return "redirect:/team";
+        }
+        
+        // Validate position
+        String[] validPositions = {"C", "1B", "2B", "3B", "SS", "OF", "DH", "SP", "RP"};
+        boolean validPosition = false;
+        for (String validPos : validPositions) {
+            if (validPos.equalsIgnoreCase(position.trim())) {
+                position = validPos; // Normalize case
+                validPosition = true;
+                break;
+            }
+        }
+        if (!validPosition) {
+            redirectAttributes.addFlashAttribute("error", "Invalid position. Valid positions: C, 1B, 2B, 3B, SS, OF, DH, SP, RP");
+            return "redirect:/team";
+        }
+
+        Integer finalContractLength = (contractLength != null && contractLength > 0) ? contractLength : 0;
+        Double finalContractAmount = (contractAmount != null && contractAmount > 0) ? contractAmount : 0.0;
+        
+        try {
+            Player player = new Player(name.trim(), position, team.trim(), finalContractLength, finalContractAmount, user.getId());
+            
+            // Calculate Average Annual Salary for salary cap purposes
+            if (finalContractLength > 0 && finalContractAmount > 0) {
+                player.setAverageAnnualSalary(finalContractAmount / finalContractLength);
+            } else {
+                player.setAverageAnnualSalary(0.0);
+            }
+            
+            playerRepository.save(player);
+            redirectAttributes.addFlashAttribute("success", "Player " + name.trim() + " added successfully!");
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error adding player: " + e.getMessage());
+        }
         
         return "redirect:/team";
     }
@@ -112,7 +156,7 @@ public class TeamController {
     public String bulkImportPlayers(@RequestParam("file") MultipartFile file, 
                                    RedirectAttributes redirectAttributes) {
         
-        // Get current authenticated user
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -126,7 +170,7 @@ public class TeamController {
             return "redirect:/team";
         }
 
-        // Check file size (10MB limit)
+
         if (file.getSize() > 10 * 1024 * 1024) {
             redirectAttributes.addFlashAttribute("error", "File size too large. Please use files under 10MB.");
             return "redirect:/team";
@@ -148,7 +192,7 @@ public class TeamController {
                 return "redirect:/team";
             }
 
-            // Save all players
+
             playerRepository.saveAll(playersToAdd);
             
             redirectAttributes.addFlashAttribute("success", 
@@ -169,7 +213,7 @@ public class TeamController {
         
         Workbook workbook = null;
         try {
-            // Support both .xlsx and .xls files
+
             if (file.getOriginalFilename().endsWith(".xlsx")) {
                 workbook = new XSSFWorkbook(file.getInputStream());
             } else if (file.getOriginalFilename().endsWith(".xls")) {
@@ -177,10 +221,7 @@ public class TeamController {
             } else {
                 throw new IllegalArgumentException("Unsupported file format. Please use .xlsx or .xls files.");
             }
-            
-            Sheet sheet = workbook.getSheetAt(0); // Get first sheet
-            
-            // Skip header row and process data rows
+            Sheet sheet = workbook.getSheetAt(0);
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
@@ -191,24 +232,20 @@ public class TeamController {
                         players.add(player);
                     }
                 } catch (Exception e) {
-                    // Log error for this row but continue processing others
                     System.err.println("Error processing row " + (i + 1) + ": " + e.getMessage());
                 }
             }
-            
         } finally {
             if (workbook != null) {
                 workbook.close();
             }
         }
-        
         return players;
     }
     
     private Player parsePlayerFromRow(Row row, Long ownerId) {
-        // Expected columns: Name, Position, MLB Team, Contract Length, Contract Amount
         if (row.getLastCellNum() < 3) {
-            return null; // Not enough columns for required fields
+            return null;
         }
         
         String name = getCellValueAsString(row.getCell(0));
@@ -216,7 +253,7 @@ public class TeamController {
         String team = getCellValueAsString(row.getCell(2));
         
         if (name.isEmpty() || position.isEmpty() || team.isEmpty()) {
-            return null; // Required fields missing
+            return null;
         }
         
         // Validate position
@@ -246,16 +283,14 @@ public class TeamController {
                         try {
                             contractLength = Integer.parseInt(contractLengthStr.trim());
                         } catch (NumberFormatException e) {
-                            // Invalid contract length, skip this player
                             return null;
                         }
                     }
                 }
             }
         }
-        
-        // Parse contract amount
-        Double contractAmount = 0.0; // Default to 0 instead of null
+
+        Double contractAmount = 0.0;
         if (row.getLastCellNum() > 4) {
             Cell contractAmountCell = row.getCell(4);
             if (contractAmountCell != null && contractAmountCell.getCellType() != CellType.BLANK) {
@@ -265,11 +300,9 @@ public class TeamController {
                     String contractAmountStr = getCellValueAsString(contractAmountCell);
                     if (!contractAmountStr.isEmpty()) {
                         try {
-                            // Remove dollar signs and commas
                             contractAmountStr = contractAmountStr.replaceAll("[$,]", "").trim();
                             contractAmount = Double.parseDouble(contractAmountStr);
                         } catch (NumberFormatException e) {
-                            // Invalid contract amount, skip this player
                             return null;
                         }
                     }
@@ -277,7 +310,16 @@ public class TeamController {
             }
         }
         
-        return new Player(name, position, team, contractLength, contractAmount, ownerId);
+        Player player = new Player(name, position, team, contractLength, contractAmount, ownerId);
+        
+        // Calculate Average Annual Salary for salary cap purposes
+        if (contractLength > 0 && contractAmount > 0) {
+            player.setAverageAnnualSalary(contractAmount / contractLength);
+        } else {
+            player.setAverageAnnualSalary(0.0);
+        }
+        
+        return player;
     }
     
     private String getCellValueAsString(Cell cell) {
@@ -287,7 +329,6 @@ public class TeamController {
             case STRING:
                 return cell.getStringCellValue().trim();
             case NUMERIC:
-                // Handle numbers that might be stored as numeric but should be strings
                 return String.valueOf((long) cell.getNumericCellValue());
             case BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
@@ -302,39 +343,30 @@ public class TeamController {
     public ResponseEntity<byte[]> downloadTemplate() throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Players");
-        
-        // Create header row
         Row header = sheet.createRow(0);
         header.createCell(0).setCellValue("Name");
         header.createCell(1).setCellValue("Position");
         header.createCell(2).setCellValue("MLB Team");
         header.createCell(3).setCellValue("Contract Length");
         header.createCell(4).setCellValue("Contract Amount");
-        
-        // Create sample data rows
         Row sampleRow1 = sheet.createRow(1);
         sampleRow1.createCell(0).setCellValue("Mike Trout");
         sampleRow1.createCell(1).setCellValue("OF");
         sampleRow1.createCell(2).setCellValue("Los Angeles Angels");
         sampleRow1.createCell(3).setCellValue(10);
         sampleRow1.createCell(4).setCellValue(35000000);
-        
         Row sampleRow2 = sheet.createRow(2);
         sampleRow2.createCell(0).setCellValue("John Doe");
         sampleRow2.createCell(1).setCellValue("C");
         sampleRow2.createCell(2).setCellValue("Boston Red Sox");
         sampleRow2.createCell(3).setCellValue(""); // Free agent
         sampleRow2.createCell(4).setCellValue(""); // Free agent
-        
-        // Auto-size columns
         for (int i = 0; i < 5; i++) {
             sheet.autoSizeColumn(i);
         }
-        
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         workbook.write(outputStream);
         workbook.close();
-        
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", "player_import_template.xlsx");
@@ -343,13 +375,8 @@ public class TeamController {
                 .headers(headers)
                 .body(outputStream.toByteArray());
     }
-    
-    /**
-     * Helper method to automatically add released players to the auction
-     */
     private int addPlayersToAuction(List<Player> playersToAdd) {
         try {
-            // Get or create the main auction
             Auction mainAuction = getOrCreateMainAuction();
             if (mainAuction == null) {
                 return 0;
@@ -357,11 +384,11 @@ public class TeamController {
             
             int addedCount = 0;
             for (Player player : playersToAdd) {
-                // Check if player is already in auction
                 AuctionItem existingItem = auctionItemRepository.findByPlayerIdAndStatus(player.getId(), "ACTIVE");
                 if (existingItem == null) {
-                    // Add player to auction with default starting bid of $1
-                    AuctionItem auctionItem = new AuctionItem(player.getId(), mainAuction.getId(), 1.0);
+                    // Set starting bid based on player type: $500K for MLB, $100K for minors
+                    double startingBid = (player.getIsMinorLeaguer() || player.getIsRookie()) ? 0.1 : 0.5;
+                    AuctionItem auctionItem = new AuctionItem(player.getId(), mainAuction.getId(), startingBid);
                     auctionItemRepository.save(auctionItem);
                     addedCount++;
                 }
@@ -369,31 +396,27 @@ public class TeamController {
             
             return addedCount;
         } catch (Exception e) {
-            // Log the error but don't fail the release operation
             System.err.println("Error adding players to auction: " + e.getMessage());
             return 0;
         }
     }
-    
-    /**
-     * Get or create the main auction (similar to AuctionController logic)
-     */
     private Auction getOrCreateMainAuction() {
         try {
-            // Look for existing active auction
             List<Auction> activeAuctions = auctionRepository.findByStatus("ACTIVE");
             if (!activeAuctions.isEmpty()) {
                 return activeAuctions.get(0);
             }
             
-            // Create main auction if it doesn't exist
-            Auction mainAuction = new Auction(
-                "Main Player Auction", 
-                LocalDateTime.now(), 
-                LocalDateTime.now().plusYears(1), // Always running
-                1L, // Default commissioner ID
-                "Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid."
-            );
+            // Create new main auction if none exists
+            Auction mainAuction = new Auction();
+            mainAuction.setName("Main Player Auction");
+            mainAuction.setDescription("Always-running player auction. Players are available for bidding with minimum 24-hour periods after first bid.");
+            mainAuction.setStartTime(LocalDateTime.now());
+            mainAuction.setEndTime(LocalDateTime.now().plusYears(1));
+            mainAuction.setCreatedByCommissionerId(1L); // Default to admin user
+            mainAuction.setStatus("ACTIVE");
+            mainAuction.setAuctionType("IN_SEASON"); // Default type
+            
             return auctionRepository.save(mainAuction);
         } catch (Exception e) {
             System.err.println("Error creating/getting main auction: " + e.getMessage());
@@ -406,15 +429,12 @@ public class TeamController {
                                        RedirectAttributes redirectAttributes) {
         System.out.println("=== RELEASE PLAYERS CALLED ===");
         System.out.println("Selected IDs: " + selectedPlayerIds);
-        
-        // Validate input
         if (selectedPlayerIds == null || selectedPlayerIds.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "No players selected for release.");
             return "redirect:/team";
         }
         
         try {
-            // Get authenticated user
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -424,8 +444,6 @@ public class TeamController {
             }
             
             System.out.println("User: " + username + " (ID: " + user.getId() + ")");
-            
-            // Get players and verify ownership
             List<Player> playersToRelease = playerRepository.findAllById(selectedPlayerIds);
             boolean isCommissioner = "COMMISSIONER".equals(user.getRole());
             
@@ -437,14 +455,18 @@ public class TeamController {
             }
             
             System.out.println("Releasing " + playersToRelease.size() + " players...");
-            
-            // Add released players to the commissioner queue
             int queuedCount = 0;
+            double releasedSalary = 0.0;
+            
             for (Player player : playersToRelease) {
                 String position = player.getPosition();
                 String originalName = player.getName();
                 
-                // Add to released players queue
+                // Track released salary for cap adjustment
+                if (player.getAverageAnnualSalary() != null) {
+                    releasedSalary += player.getAverageAnnualSalary();
+                }
+                
                 ReleasedPlayer releasedPlayer = new ReleasedPlayer(
                     originalName,
                     player.getPosition(),
@@ -460,11 +482,19 @@ public class TeamController {
                 player.setTeam("Free Agent");
                 player.setContractLength(0);
                 player.setContractAmount(0.0);
+                player.setAverageAnnualSalary(0.0);
                 // Keep the ownerId so the slot stays with the user
                 
                 playerRepository.save(player);
                 queuedCount++;
                 System.out.println("Released to queue: " + originalName + " -> replaced with " + player.getName());
+            }
+            
+            // Update user's salary cap usage
+            if (releasedSalary > 0) {
+                double currentSalary = user.getCurrentSalaryUsed() != null ? user.getCurrentSalaryUsed() : 0.0;
+                user.setCurrentSalaryUsed(Math.max(0.0, currentSalary - releasedSalary));
+                userAccountRepository.save(user);
             }
             
             redirectAttributes.addFlashAttribute("success", 

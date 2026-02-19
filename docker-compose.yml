@@ -1,35 +1,94 @@
 services:
   db:
-    image: postgres:15
+    image: postgres:15-alpine
+    container_name: fantasyia_postgres
     environment:
       POSTGRES_DB: fantasyia
       POSTGRES_USER: fantasyia
       POSTGRES_PASSWORD: fantasyia
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fantasyia -d fantasyia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fantasyia-network
+
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: fantasyia_app
     ports:
       - "8080:8080"
     environment:
+      # Database configuration
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/fantasyia
       SPRING_DATASOURCE_USERNAME: fantasyia
       SPRING_DATASOURCE_PASSWORD: fantasyia
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      
+      # JPA/Hibernate configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      
+      # Application configuration
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: docker
+      
+      # Logging
+      LOGGING_LEVEL_COM_FANTASYIA: INFO
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: WARN
+      
+      # Performance
+      SPRING_DEVTOOLS_RESTART_ENABLED: false
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: false
+      SPRING_THYMELEAF_CACHE: true
+      
     depends_on:
-      - db
-    volumes:
-      - ./src/main/resources/templates:/app/src/main/resources/templates
-      - ./src/main/resources/static:/app/src/main/resources/static
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - fantasyia-network
+
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
+    container_name: fantasyia_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "8081:80"
     depends_on:
       - db
+    restart: unless-stopped
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - fantasyia-network
+
 volumes:
   pgdata:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  fantasyia-network:
+    driver: bridge
