@@ -154,22 +154,18 @@ public class AuctionItem {
         this.currentMinimumIncrement = currentMinimumIncrement; 
     }
 
-    // Helper methods to calculate minimum bid increment - simplified structure
+    // Helper methods to calculate minimum bid increment - $500K for all players
     public Double getMinimumBidIncrement(String auctionType) {
         if (lastBidTime == null) {
             return 0.0; // No increment needed if no bids yet
         }
 
-        // Simple increment structure
-        if (getIsMinorLeaguer()) {
-            return 0.1; // $100K for minor leaguers
-        } else {
-            return 1.0; // $1M for MLB players
-        }
+        // All players now use $500K increment
+        return 0.5; // $500K for all players
     }
 
     public void updateMinimumIncrement(String auctionType) {
-        // With fixed increments, no need to track changing minimums
+        // With fixed $500K increments, set consistent increment
         double newIncrement = getMinimumBidIncrement(auctionType);
         this.currentMinimumIncrement = newIncrement;
     }

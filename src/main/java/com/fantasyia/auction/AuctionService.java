@@ -40,22 +40,16 @@ public class AuctionService {
     /**
      * Calculate the current minimum bid increment.
      * 
-     * Simple Rules:
-     * - MLB players: $1M minimum increase
-     * - Minor league players: $100K minimum increase
+     * Updated Rules:
+     * - All players: $500K minimum increase
      */
     public double calculateMinimumBidIncrement(AuctionItem item, String auctionType) {
         if (item.getLastBidTime() == null) {
             return 0.0; // No increment for first bid
         }
 
-        boolean isMinorLeaguer = item.getIsMinorLeaguer();
-        
-        if (isMinorLeaguer) {
-            return 0.1;  // $100K for minor leaguers
-        } else {
-            return 1.0;  // $1M for MLB players
-        }
+        // All players now use $500K increment
+        return 0.5;  // $500K for all players
     }
 
     /**
@@ -118,19 +112,18 @@ public class AuctionService {
                 "You have reached the " + rosterType + " roster limit. You must make room before bidding.");
         }
 
-        // Check minimum bid (Simple increment: $1M for MLB, $100K for minors)
+        // Check minimum bid (Updated: $500K increment for all players)
         double minBid = getMinimumNextBid(item, auction.getAuctionType());
         if (bidAmount < minBid) {
             String playerType = item.getIsMinorLeaguer() ? "minor league" : "MLB";
-            String increment = item.getIsMinorLeaguer() ? "$100K" : "$1M";
             
             if (item.getCurrentBid() == null) {
                 return new BidValidationResult(false, 
                     String.format("Minimum starting bid for %s players is $%.1fM", playerType, minBid));
             } else {
                 return new BidValidationResult(false, 
-                    String.format("Minimum bid is $%.1fM (current bid $%.1fM + %s increment)", 
-                        minBid, item.getCurrentBid(), increment));
+                    String.format("Minimum bid is $%.1fM (current bid $%.1fM + $500K increment)", 
+                        minBid, item.getCurrentBid()));
             }
         }
 
