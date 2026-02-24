@@ -15,7 +15,7 @@ public class Player {
     @Column(nullable = false)
     private String position; // Baseball positions: C, 1B, 2B, 3B, SS, OF, SP, RP, DH
 
-    @Column(nullable = false)
+    @Column(name = "mlb_team", nullable = false)
     private String team; // MLB team
 
     @Column
@@ -27,7 +27,7 @@ public class Player {
     @Column
     private Double averageAnnualSalary; // AAS - used for cap calculations
 
-    @Column
+    @Column(name = "owner_id")
     private Long ownerId; // foreign key to UserAccount
 
     @Column

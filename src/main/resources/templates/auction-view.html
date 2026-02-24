@@ -2,6 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Player Auction - FantasyIA</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css"/>
     <style>
@@ -245,6 +248,21 @@
 </head>
 <body>
     <div class="auction-container">
+        <!-- No Auction Available -->
+        <div th:if="${noAuction}" class="section" style="text-align: center;">
+            <div class="auction-header">
+                <h1>🏆 Player Auction</h1>
+                <p>No auction is currently active</p>
+                <p><a th:href="@{/}" style="color: white;">← Back to Home</a></p>
+            </div>
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 30px; border-radius: 10px;">
+                <h3>No Active Auction</h3>
+                <p th:text="${message}">No auction is currently active. Contact a commissioner to create one.</p>
+            </div>
+        </div>
+
+        <!-- Normal auction view (when auction exists) -->
+        <div th:unless="${noAuction}">
         <div class="auction-header">
             <h1>🏆 Player Auction</h1>
             <p>Place your bids now! • Always running • 24-hour minimum after first bid</p>
@@ -413,6 +431,7 @@
                 </div>
             </div>
         </div>
+        </div> <!-- End normal auction view -->
     </div>
 </body>
 </html>

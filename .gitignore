@@ -3,6 +3,7 @@
 
 # IntelliJ IDEA project files
 /.idea/
+/.sh/
 /*.iml
 
 # IntelliJ build output

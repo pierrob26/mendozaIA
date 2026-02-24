@@ -1,0 +1,220 @@
+======================================================================
+                    FantasyIA Backend Logic Explanation
+                         Date: February 22, 2026
+======================================================================
+
+OVERVIEW
+--------
+FantasyIA is a Fantasy Baseball League Management application built with Spring Boot.
+The backend manages user authentication, player roster management, and a complex
+auction/free agency system for acquiring players. The core business logic revolves
+around fantasy baseball league rules including salary caps, roster limits, and
+bidding mechanisms.
+
+ARCHITECTURE & TECH STACK
+-------------------------
+• Framework: Spring Boot with MVC pattern
+• Database: PostgreSQL with JPA/Hibernate ORM
+• Security: Spring Security with BCrypt password hashing
+• Scheduling: Spring's @Scheduled annotations for automated tasks
+• Deployment: Docker containerization with docker-compose
+
+CORE ENTITIES & DATA MODEL
+--------------------------
+
+1. USER MANAGEMENT
+   - UserAccount: Stores user credentials, roles (MEMBER/COMMISSIONER), and salary cap info
+     * Each user has $100M salary cap
+     * Tracks current salary usage and available cap space
+     * Manages roster counts (40 major league max, 25 minor league max)
+     * Built-in methods to check affordability and roster space
+
+2. PLAYER MANAGEMENT
+   - Player: Represents baseball players with contracts
+     * Includes position, MLB team, contract details
+     * Tracks rookie status (130 AB or 50 IP threshold)
+     * Links to owner via owner_id foreign key
+     * Calculates average annual salary (AAS) for cap purposes
+   
+   - ReleasedPlayer: Temporary storage for players pending commissioner approval
+
+3. AUCTION SYSTEM
+   - Auction: Container for auction events
+     * Two types: IN_SEASON (24hr rules) vs OFF_SEASON (72hr rules)
+     * Managed by commissioners
+     * Always-running "Main Player Auction"
+   
+   - AuctionItem: Individual players available for bidding
+     * Tracks bid history and timing
+     * Enforces minimum time requirements after bids
+     * Manages contract deadlines (48 hours to post)
+     * Dynamic bid increment calculation ($500K for all players)
+   
+   - Bid: Individual bid records with timestamps
+     * Links bidder to auction item with amount
+     * Status tracking (ACTIVE, OUTBID, WINNING)
+   
+   - PendingContract: Post-auction contract management
+     * 48-hour window to finalize contracts
+     * Contract length validation (1-5 years, max 2 for <$750K)
+     * Auto-buyout at 50% if deadline missed
+
+BUSINESS LOGIC & RULES ENGINE
+-----------------------------
+
+1. SALARY CAP SYSTEM
+   - Hard $100M cap per team
+   - Bid validation prevents cap violations
+   - Real-time cap space calculation
+   - AAS (Average Annual Salary) determines cap hit
+
+2. ROSTER MANAGEMENT
+   - 40-player major league roster limit
+   - 25-player minor league roster limit
+   - Automatic placeholder generation ("Empty C Slot", etc.)
+   - Roster compliance deadlines after acquisitions
+
+3. AUCTION RULES ENGINE (AuctionService)
+   Key Methods:
+   
+   a) validateBid(): Comprehensive bid validation
+      - Checks salary cap compliance
+      - Verifies roster space availability
+      - Enforces minimum bid increments
+      - Prevents bids on inactive auctions
+   
+   b) placeBid(): Processes valid bids
+      - Creates bid record
+      - Updates auction item with new high bid
+      - Resets auction timer (critical: each bid resets full period)
+      - Marks previous bids as "OUTBID"
+      - Sets "cannot delete" flag after first bid
+   
+   c) awardPlayer(): Completes auction process
+      - Validates minimum time elapsed since last bid
+      - Creates PendingContract with 48-hour deadline
+      - Sets roster compliance deadlines
+      - Handles buyout scenarios
+
+4. TIME-BASED RULES
+   - IN_SEASON: 24 hours after LAST bid before player can be awarded
+   - OFF_SEASON: 72 hours after LAST bid
+   - Contract posting: 48 hours after winning
+   - Roster compliance: 24h (in-season) or 48h (off-season)
+
+5. BID INCREMENT SYSTEM
+   - All players: $500K minimum increment (simplified from complex time-based system)
+   - Starting bids: $500K for MLB players, $100K for minor leaguers
+   - Locked increments: cannot decrease once set
+
+SCHEDULED AUTOMATION
+-------------------
+AuctionScheduledTasks handles background processing:
+
+1. processExpiredContracts() - Runs every hour
+   - Finds contracts past 48-hour deadline
+   - Applies 50% buyout fees automatically
+   - Returns players to free agency
+
+2. autoAwardExpiredAuctions() - Runs every 30 minutes
+   - Identifies auctions ready for completion
+   - Auto-awards players to highest bidders
+   - Creates pending contracts
+
+SECURITY & ACCESS CONTROL
+-------------------------
+Spring Security implementation:
+- BCrypt password hashing
+- Role-based access (MEMBER vs COMMISSIONER)
+- Commissioner-only endpoints:
+  * Auction management (/auction/manage)
+  * Player addition/removal
+  * Auction type toggling
+- Member endpoints:
+  * Auction viewing (/auction/view)
+  * Bid placement
+  * Team management
+
+WEB LAYER ARCHITECTURE
+---------------------
+
+1. CONTROLLERS
+   - HomeController: Dashboard and navigation
+   - AuctionController: Auction viewing and management
+   - TeamController: Player roster management
+   - RegisterController: User registration
+   - CustomErrorController: Error handling
+
+2. REQUEST FLOW
+   GET /auction/view → AuctionController.viewAuction()
+   POST /auction/place-bid → AuctionService.placeBid() → Database updates
+   GET /team → TeamController.team() → Auto-generate roster placeholders
+
+3. DATA TRANSFER
+   - Model attributes for Thymeleaf templates
+   - RedirectAttributes for flash messages
+   - JSON responses for AJAX calls
+
+REPOSITORY LAYER
+---------------
+Spring Data JPA repositories provide data access:
+- Custom query methods using method naming conventions
+- @Query annotations for complex queries
+- Transactional operations for consistency
+
+Key Repository Operations:
+- PlayerRepository.findByOwnerId() - Get user's roster
+- BidRepository.findHighestBidForItem() - Current auction leader
+- AuctionItemRepository.findExpiredItems() - Ready for completion
+
+INITIALIZATION & BOOTSTRAPPING
+------------------------------
+DataInitializer (CommandLineRunner):
+- Creates default users: "testuser" and "commissioner" (both password: "password")
+- Seeds database with sample players and free agents
+- Runs on application startup
+
+ERROR HANDLING & VALIDATION
+---------------------------
+- Input validation at controller level
+- Business rule validation in service layer
+- Database constraint enforcement
+- User-friendly error messages with RedirectAttributes
+- Comprehensive exception handling with try-catch blocks
+
+CONFIGURATION
+------------
+- SecurityConfig: Defines access control rules
+- Database configuration via Spring profiles
+- Docker environment variables for database connection
+- Scheduled task timing configuration
+
+KEY BUSINESS FLOWS
+-----------------
+
+1. USER REGISTRATION → TEAM ROSTER SETUP
+   User registers → Empty roster slots auto-generated → Ready for auctions
+
+2. AUCTION PARTICIPATION
+   Commissioner adds players → Users place bids → Timer resets with each bid →
+   Minimum time expires → Auto-award → Pending contract → 48hr deadline →
+   Either contract posted or buyout applied
+
+3. SALARY CAP MANAGEMENT
+   Bid validation → Cap space check → Successful acquisition → AAS applied to cap →
+   Running total updated → Future bid validation uses new cap space
+
+4. ROSTER COMPLIANCE
+   Player acquisition → Roster limit check → Compliance deadline set →
+   User must make room within timeframe → Automated monitoring
+
+EXTERNAL INTEGRATIONS
+--------------------
+- PostgreSQL database via JDBC
+- Docker containerization
+- Email notifications (infrastructure ready, not implemented)
+- Excel import/export functionality for bulk operations
+
+This backend system provides a comprehensive fantasy baseball league management
+platform with sophisticated auction mechanics, automated rule enforcement,
+and scalable architecture for multiple users and concurrent operations.

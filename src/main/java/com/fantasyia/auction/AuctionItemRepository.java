@@ -11,11 +11,13 @@ import java.util.List;
 @Repository
 public interface AuctionItemRepository extends JpaRepository<AuctionItem, Long> {
     
-    List<AuctionItem> findByAuctionIdAndStatus(Long auctionId, String status);
+    @Query("SELECT ai FROM AuctionItem ai WHERE ai.auctionId = :auctionId AND ai.status = :status")
+    List<AuctionItem> findByAuctionIdAndStatus(@Param("auctionId") Long auctionId, @Param("status") String status);
     
     List<AuctionItem> findByAuctionId(Long auctionId);
     
-    AuctionItem findByPlayerIdAndStatus(Long playerId, String status);
+    @Query("SELECT ai FROM AuctionItem ai WHERE ai.playerId = :playerId AND ai.status = :status")
+    AuctionItem findByPlayerIdAndStatus(@Param("playerId") Long playerId, @Param("status") String status);
     
     @Query("SELECT ai FROM AuctionItem ai WHERE ai.auctionId = :auctionId AND ai.status = 'ACTIVE' " +
            "AND ai.firstBidTime IS NOT NULL AND ai.firstBidTime < :cutoffTime")

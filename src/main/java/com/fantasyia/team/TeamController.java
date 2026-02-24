@@ -29,7 +29,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 public class TeamController {
@@ -49,6 +52,19 @@ public class TeamController {
     @Autowired
     private ReleasedPlayerRepository releasedPlayerRepository;
 
+    private static final LinkedHashMap<String, Integer> REQUIRED_ROSTER_TEMPLATE = new LinkedHashMap<>();
+    static {
+        REQUIRED_ROSTER_TEMPLATE.put("C", 1);
+        REQUIRED_ROSTER_TEMPLATE.put("1B", 1);
+        REQUIRED_ROSTER_TEMPLATE.put("2B", 1);
+        REQUIRED_ROSTER_TEMPLATE.put("3B", 1);
+        REQUIRED_ROSTER_TEMPLATE.put("SS", 1);
+        REQUIRED_ROSTER_TEMPLATE.put("OF", 3);
+        REQUIRED_ROSTER_TEMPLATE.put("DH", 1);
+        REQUIRED_ROSTER_TEMPLATE.put("SP", 5);
+        REQUIRED_ROSTER_TEMPLATE.put("RP", 3);
+    }
+
     @GetMapping("/team")
     public String team(Model model,
                       @RequestParam(required = false) String position,
@@ -64,6 +80,8 @@ public class TeamController {
         if (user == null) {
             return "redirect:/login";
         }
+
+        ensureRosterPlaceholders(user.getId());
 
 
         List<Player> players = playerRepository.findPlayersWithFilters(
@@ -103,17 +121,17 @@ public class TeamController {
             redirectAttributes.addFlashAttribute("error", "Player name is required");
             return "redirect:/team";
         }
-        
+
         if (position == null || position.trim().isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Player position is required");
             return "redirect:/team";
         }
-        
+
         if (team == null || team.trim().isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "MLB team is required");
             return "redirect:/team";
         }
-        
+
         // Validate position
         String[] validPositions = {"C", "1B", "2B", "3B", "SS", "OF", "DH", "SP", "RP"};
         boolean validPosition = false;
@@ -131,36 +149,36 @@ public class TeamController {
 
         Integer finalContractLength = (contractLength != null && contractLength > 0) ? contractLength : 0;
         Double finalContractAmount = (contractAmount != null && contractAmount > 0) ? contractAmount : 0.0;
-        
+
         try {
             Player player = new Player(name.trim(), position, team.trim(), finalContractLength, finalContractAmount, user.getId());
-            
+
             // Calculate Average Annual Salary for salary cap purposes
             if (finalContractLength > 0 && finalContractAmount > 0) {
                 player.setAverageAnnualSalary(finalContractAmount / finalContractLength);
             } else {
                 player.setAverageAnnualSalary(0.0);
             }
-            
+
             playerRepository.save(player);
             redirectAttributes.addFlashAttribute("success", "Player " + name.trim() + " added successfully!");
-            
+
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error adding player: " + e.getMessage());
         }
-        
+
         return "redirect:/team";
     }
 
     @PostMapping("/team/bulk-import")
-    public String bulkImportPlayers(@RequestParam("file") MultipartFile file, 
+    public String bulkImportPlayers(@RequestParam("file") MultipartFile file,
                                    RedirectAttributes redirectAttributes) {
-        
+
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
-        
+
         if (user == null) {
             return "redirect:/login";
         }
@@ -185,32 +203,32 @@ public class TeamController {
 
         try {
             List<Player> playersToAdd = parseExcelFile(file, user.getId());
-            
+
             if (playersToAdd.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", 
+                redirectAttributes.addFlashAttribute("error",
                     "No valid players found in the file. Please check the format and ensure required fields (Name, Position, MLB Team) are filled.");
                 return "redirect:/team";
             }
 
 
             playerRepository.saveAll(playersToAdd);
-            
-            redirectAttributes.addFlashAttribute("success", 
+
+            redirectAttributes.addFlashAttribute("success",
                 "Successfully imported " + playersToAdd.size() + " players!");
-            
+
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", 
+            redirectAttributes.addFlashAttribute("error",
                 "Error processing file: " + e.getMessage() + ". Please check your file format and try again.");
         }
-        
+
         return "redirect:/team";
     }
-    
+
     private List<Player> parseExcelFile(MultipartFile file, Long ownerId) throws IOException {
         List<Player> players = new ArrayList<>();
-        
+
         Workbook workbook = null;
         try {
 
@@ -225,7 +243,7 @@ public class TeamController {
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
-                
+
                 try {
                     Player player = parsePlayerFromRow(row, ownerId);
                     if (player != null) {
@@ -242,20 +260,20 @@ public class TeamController {
         }
         return players;
     }
-    
+
     private Player parsePlayerFromRow(Row row, Long ownerId) {
         if (row.getLastCellNum() < 3) {
             return null;
         }
-        
+
         String name = getCellValueAsString(row.getCell(0));
         String position = getCellValueAsString(row.getCell(1));
         String team = getCellValueAsString(row.getCell(2));
-        
+
         if (name.isEmpty() || position.isEmpty() || team.isEmpty()) {
             return null;
         }
-        
+
         // Validate position
         String[] validPositions = {"C", "1B", "2B", "3B", "SS", "OF", "DH", "SP", "RP"};
         boolean validPosition = false;
@@ -269,7 +287,7 @@ public class TeamController {
         if (!validPosition) {
             return null; // Invalid position
         }
-        
+
         // Parse contract length
         Integer contractLength = 0; // Default to 0 instead of null
         if (row.getLastCellNum() > 3) {
@@ -309,22 +327,22 @@ public class TeamController {
                 }
             }
         }
-        
+
         Player player = new Player(name, position, team, contractLength, contractAmount, ownerId);
-        
+
         // Calculate Average Annual Salary for salary cap purposes
         if (contractLength > 0 && contractAmount > 0) {
             player.setAverageAnnualSalary(contractAmount / contractLength);
         } else {
             player.setAverageAnnualSalary(0.0);
         }
-        
+
         return player;
     }
-    
+
     private String getCellValueAsString(Cell cell) {
         if (cell == null) return "";
-        
+
         switch (cell.getCellType()) {
             case STRING:
                 return cell.getStringCellValue().trim();
@@ -338,7 +356,7 @@ public class TeamController {
                 return "";
         }
     }
-    
+
     @GetMapping("/team/download-template")
     public ResponseEntity<byte[]> downloadTemplate() throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -370,7 +388,7 @@ public class TeamController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", "player_import_template.xlsx");
-        
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(outputStream.toByteArray());
@@ -381,7 +399,7 @@ public class TeamController {
             if (mainAuction == null) {
                 return 0;
             }
-            
+
             int addedCount = 0;
             for (Player player : playersToAdd) {
                 AuctionItem existingItem = auctionItemRepository.findByPlayerIdAndStatus(player.getId(), "ACTIVE");
@@ -393,7 +411,7 @@ public class TeamController {
                     addedCount++;
                 }
             }
-            
+
             return addedCount;
         } catch (Exception e) {
             System.err.println("Error adding players to auction: " + e.getMessage());
@@ -406,7 +424,7 @@ public class TeamController {
             if (!activeAuctions.isEmpty()) {
                 return activeAuctions.get(0);
             }
-            
+
             // Create new main auction if none exists
             Auction mainAuction = new Auction();
             mainAuction.setName("Main Player Auction");
@@ -416,14 +434,47 @@ public class TeamController {
             mainAuction.setCreatedByCommissionerId(1L); // Default to admin user
             mainAuction.setStatus("ACTIVE");
             mainAuction.setAuctionType("IN_SEASON"); // Default type
-            
+
             return auctionRepository.save(mainAuction);
         } catch (Exception e) {
             System.err.println("Error creating/getting main auction: " + e.getMessage());
             return null;
         }
     }
-    
+    private void ensureRosterPlaceholders(Long ownerId) {
+        List<Player> existingPlayers = playerRepository.findByOwnerId(ownerId);
+        Map<String, Long> positionCounts = existingPlayers.stream()
+            .collect(Collectors.groupingBy(Player::getPosition, LinkedHashMap::new, Collectors.counting()));
+
+        REQUIRED_ROSTER_TEMPLATE.forEach((position, requiredCount) -> {
+            long currentCount = positionCounts.getOrDefault(position, 0L);
+            while (currentCount < requiredCount) {
+                Player placeholder = createPlaceholderPlayer(position, ownerId, currentCount + 1);
+                playerRepository.save(placeholder);
+                currentCount++;
+            }
+        });
+    }
+
+    private Player createPlaceholderPlayer(String position, Long ownerId, long slotNumber) {
+        String slotLabel = slotNumber > 1 ? " #" + slotNumber : "";
+        Player placeholder = new Player(
+            "Empty " + position + " Slot" + slotLabel,
+            position,
+            "Free Agent",
+            0,
+            0.0,
+            ownerId
+        );
+        placeholder.setAverageAnnualSalary(0.0);
+        placeholder.setContractYear(0);
+        placeholder.setIsMinorLeaguer(false);
+        placeholder.setIsRookie(false);
+        placeholder.setIsOnFortyManRoster(false);
+        placeholder.setAtBats(0);
+        placeholder.setInningsPitched(0);
+        return placeholder;
+    }
     @PostMapping("/team/release-players")
     public String releaseSelectedPlayers(@RequestParam(value = "selectedPlayers", required = false) List<Long> selectedPlayerIds,
                                        RedirectAttributes redirectAttributes) {
@@ -433,40 +484,40 @@ public class TeamController {
             redirectAttributes.addFlashAttribute("error", "No players selected for release.");
             return "redirect:/team";
         }
-        
+
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
-            
+
             if (user == null) {
                 return "redirect:/login";
             }
-            
+
             System.out.println("User: " + username + " (ID: " + user.getId() + ")");
             List<Player> playersToRelease = playerRepository.findAllById(selectedPlayerIds);
             boolean isCommissioner = "COMMISSIONER".equals(user.getRole());
-            
+
             for (Player player : playersToRelease) {
                 if (!isCommissioner && !user.getId().equals(player.getOwnerId())) {
                     redirectAttributes.addFlashAttribute("error", "You can only release your own players.");
                     return "redirect:/team";
                 }
             }
-            
+
             System.out.println("Releasing " + playersToRelease.size() + " players...");
             int queuedCount = 0;
             double releasedSalary = 0.0;
-            
+
             for (Player player : playersToRelease) {
                 String position = player.getPosition();
                 String originalName = player.getName();
-                
+
                 // Track released salary for cap adjustment
                 if (player.getAverageAnnualSalary() != null) {
                     releasedSalary += player.getAverageAnnualSalary();
                 }
-                
+
                 ReleasedPlayer releasedPlayer = new ReleasedPlayer(
                     originalName,
                     player.getPosition(),
@@ -476,7 +527,7 @@ public class TeamController {
                     player.getOwnerId()
                 );
                 releasedPlayerRepository.save(releasedPlayer);
-                
+
                 // Replace with generic filler player
                 player.setName("Empty " + position + " Slot");
                 player.setTeam("Free Agent");
@@ -484,29 +535,29 @@ public class TeamController {
                 player.setContractAmount(0.0);
                 player.setAverageAnnualSalary(0.0);
                 // Keep the ownerId so the slot stays with the user
-                
+
                 playerRepository.save(player);
                 queuedCount++;
                 System.out.println("Released to queue: " + originalName + " -> replaced with " + player.getName());
             }
-            
+
             // Update user's salary cap usage
             if (releasedSalary > 0) {
                 double currentSalary = user.getCurrentSalaryUsed() != null ? user.getCurrentSalaryUsed() : 0.0;
                 user.setCurrentSalaryUsed(Math.max(0.0, currentSalary - releasedSalary));
                 userAccountRepository.save(user);
             }
-            
-            redirectAttributes.addFlashAttribute("success", 
+
+            redirectAttributes.addFlashAttribute("success",
                 "Successfully released " + queuedCount + " player(s). They have been added to the commissioner queue for auction review.");
             System.out.println("=== RELEASE COMPLETED ===");
-            
+
         } catch (Exception e) {
             System.err.println("=== ERROR ===");
             e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", "Error releasing players: " + e.getMessage());
         }
-        
+
         return "redirect:/team";
     }
 

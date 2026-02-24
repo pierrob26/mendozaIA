@@ -10,7 +10,7 @@ public class Auction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "auction_name", nullable = false)
     private String name;
 
     @Column(nullable = false)
@@ -19,10 +19,10 @@ public class Auction {
     @Column(nullable = false)
     private LocalDateTime endTime;
 
-    @Column(nullable = false)
+    @Column(name = "commissioner_id", nullable = false)
     private Long createdByCommissionerId;
 
-    @Column(nullable = false)
+    @Column(name = "auction_status", nullable = false)
     private String status = "ACTIVE"; // ACTIVE, COMPLETED, CANCELLED
 
     @Column

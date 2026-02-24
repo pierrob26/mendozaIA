@@ -72,13 +72,70 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
         
-        // Create a test commissioner if it doesn't exist
+        // Create test commissioner accounts
+        createTestCommissioners();
+        
+        // Create additional test users
+        createAdditionalTestUsers();
+    }
+    
+    private void createTestCommissioners() {
+        // Primary test commissioner
         if (!userAccountRepository.existsByUsername("commissioner")) {
             UserAccount commissioner = new UserAccount();
             commissioner.setUsername("commissioner");
-            commissioner.setPassword(passwordEncoder.encode("password"));
+            commissioner.setPassword(passwordEncoder.encode("admin123"));
             commissioner.setRole("COMMISSIONER");
+            commissioner.setSalaryCap(100.0);
+            commissioner.setCurrentSalaryUsed(0.0);
+            commissioner.setMajorLeagueRosterCount(0);
+            commissioner.setMinorLeagueRosterCount(0);
             userAccountRepository.save(commissioner);
+        }
+        
+        // Additional commissioner for testing
+        if (!userAccountRepository.existsByUsername("admin")) {
+            UserAccount admin = new UserAccount();
+            admin.setUsername("admin");
+            admin.setPassword(passwordEncoder.encode("password"));
+            admin.setRole("COMMISSIONER");
+            admin.setSalaryCap(100.0);
+            admin.setCurrentSalaryUsed(0.0);
+            admin.setMajorLeagueRosterCount(0);
+            admin.setMinorLeagueRosterCount(0);
+            userAccountRepository.save(admin);
+        }
+        
+        // Easy-to-remember commissioner account
+        if (!userAccountRepository.existsByUsername("commish")) {
+            UserAccount commish = new UserAccount();
+            commish.setUsername("commish");
+            commish.setPassword(passwordEncoder.encode("commish"));
+            commish.setRole("COMMISSIONER");
+            commish.setSalaryCap(100.0);
+            commish.setCurrentSalaryUsed(0.0);
+            commish.setMajorLeagueRosterCount(0);
+            commish.setMinorLeagueRosterCount(0);
+            userAccountRepository.save(commish);
+        }
+    }
+    
+    private void createAdditionalTestUsers() {
+        // Create additional test managers
+        String[] testManagers = {"manager1", "manager2", "team1", "team2", "owner1"};
+        
+        for (String username : testManagers) {
+            if (!userAccountRepository.existsByUsername(username)) {
+                UserAccount user = new UserAccount();
+                user.setUsername(username);
+                user.setPassword(passwordEncoder.encode("password"));
+                user.setRole("MANAGER");
+                user.setSalaryCap(100.0);
+                user.setCurrentSalaryUsed(0.0);
+                user.setMajorLeagueRosterCount(0);
+                user.setMinorLeagueRosterCount(0);
+                userAccountRepository.save(user);
+            }
         }
     }
 }

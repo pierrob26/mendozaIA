@@ -193,25 +193,32 @@ public class AuctionController {
     @GetMapping("/view")
     public String viewAuction(Model model) {
         try {
-            // Get or create the main auction (commissioners can create, others just view)
-            Auction mainAuction = getMainAuction();
-            if (mainAuction == null) {
-                // Create a default auction if none exists
-                mainAuction = new Auction(
-                    "Main Player Auction", 
-                    LocalDateTime.now(), 
-                    LocalDateTime.now().plusYears(1), // Always running
-                    1L, // Default commissioner ID
-                    "In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments."
-                );
-                mainAuction.setAuctionType("IN_SEASON");
-                mainAuction = auctionRepository.save(mainAuction);
-            }
-            
-            // Get current user
+            // Get current user first
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
+            
+            // Get or create the main auction (commissioners can create, others just view)
+            Auction mainAuction = getMainAuction();
+            if (mainAuction == null) {
+                if (user != null && "COMMISSIONER".equals(user.getRole())) {
+                    // Only commissioners can create auctions
+                    mainAuction = new Auction(
+                        "Main Player Auction", 
+                        LocalDateTime.now(), 
+                        LocalDateTime.now().plusYears(1), // Always running
+                        user.getId(), // Use current commissioner's ID
+                        "In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments."
+                    );
+                    mainAuction.setAuctionType("IN_SEASON");
+                    mainAuction = auctionRepository.save(mainAuction);
+                } else {
+                    // Non-commissioners can't create auctions, show empty view
+                    model.addAttribute("noAuction", true);
+                    model.addAttribute("message", "No auction is currently active. Contact a commissioner to create one.");
+                    return "auction-view";
+                }
+            }
             
             // Get active auction items
             List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");

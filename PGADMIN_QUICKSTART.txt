@@ -1,0 +1,93 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                 FantasyIA - pgAdmin Quick Start                ║
+╚═══════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────┐
+│  STEP 1: Open pgAdmin                                          │
+└───────────────────────────────────────────────────────────────┘
+
+   🌐 URL: http://localhost:8081
+
+   🔐 Login:
+      Email:    admin@admin.com
+      Password: admin
+
+┌───────────────────────────────────────────────────────────────┐
+│  STEP 2: Add Database Server                                   │
+└───────────────────────────────────────────────────────────────┘
+
+   1. Right-click "Servers" → "Register" → "Server"
+   
+   2. General Tab:
+      Name: FantasyIA Database
+   
+   3. Connection Tab:
+      Host:     db
+      Port:     5432
+      Database: fantasyia
+      Username: fantasyia
+      Password: fantasyia
+      ☑ Save password
+
+   4. Click "Save"
+
+┌───────────────────────────────────────────────────────────────┐
+│  STEP 3: Browse Database                                       │
+└───────────────────────────────────────────────────────────────┘
+
+   Navigate: FantasyIA Database → Databases → fantasyia → 
+             Schemas → public → Tables
+
+   📊 Tables Available:
+      • users              - User accounts
+      • players            - Player contracts
+      • auctions           - Auction data
+      • auction_items      - Items in auction
+      • bids               - Bid history
+      • pending_contracts  - Contract negotiations
+      • released_players   - Released player queue
+
+┌───────────────────────────────────────────────────────────────┐
+│  USEFUL SQL QUERIES                                            │
+└───────────────────────────────────────────────────────────────┘
+
+   View all users:
+   SELECT * FROM users;
+
+   View all players:
+   SELECT p.*, u.username as owner 
+   FROM players p 
+   LEFT JOIN users u ON p.user_id = u.id;
+
+   View active auctions:
+   SELECT * FROM auctions WHERE active = true;
+
+┌───────────────────────────────────────────────────────────────┐
+│  TROUBLESHOOTING                                               │
+└───────────────────────────────────────────────────────────────┘
+
+   pgAdmin not running?
+   $ docker-compose up -d pgadmin
+
+   Check all services:
+   $ docker-compose ps
+
+   View pgAdmin logs:
+   $ docker-compose logs pgadmin
+
+┌───────────────────────────────────────────────────────────────┐
+│  QUICK ACCESS SCRIPT                                           │
+└───────────────────────────────────────────────────────────────┘
+
+   $ chmod +x start_pgadmin.sh
+   $ ./start_pgadmin.sh
+
+   This will:
+   ✓ Check if pgAdmin is running
+   ✓ Start it if needed
+   ✓ Open browser to http://localhost:8081
+   ✓ Display all login credentials
+
+╔═══════════════════════════════════════════════════════════════╗
+║  Full guide available in: PGADMIN_GUIDE.md                     ║
+╚═══════════════════════════════════════════════════════════════╝
