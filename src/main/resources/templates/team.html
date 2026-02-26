@@ -294,7 +294,7 @@
                         <td th:text="${player.position}">Position</td>
                         <td th:text="${player.team}">MLB Team</td>
                         <td th:text="${player.contractLength != null && player.contractLength > 0 ? player.contractLength + ' years' : 'None'}">Contract Length</td>
-                        <td th:text="${player.contractAmount != null && player.contractAmount > 0 ? '$' + #numbers.formatDecimal(player.contractAmount, 0, 2) : 'None'}">Contract Amount</td>
+                        <td th:text="${player.contractAmount != null && player.contractAmount > 0 ? '$' + #numbers.formatDecimal(player.contractAmount, 0, 2) + 'M' : 'None'}">Contract Amount</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(players)}">
                         <td colspan="6" style="text-align: center; font-style: italic;">No players found with the current filters.</td>
@@ -376,35 +376,35 @@
                         <label for="contractAmount">Contract Amount ($) - Optional:</label>
                         <select id="contractAmount" name="contractAmount">
                             <option value="">No contract (Free Agent)</option>
-                            <option value="250000">$250,000</option>
-                            <option value="500000">$500,000</option>
-                            <option value="750000">$750,000</option>
-                            <option value="1000000">$1,000,000</option>
-                            <option value="2000000">$2,000,000</option>
-                            <option value="3000000">$3,000,000</option>
-                            <option value="4000000">$4,000,000</option>
-                            <option value="5000000">$5,000,000</option>
-                            <option value="6000000">$6,000,000</option>
-                            <option value="7000000">$7,000,000</option>
-                            <option value="8000000">$8,000,000</option>
-                            <option value="9000000">$9,000,000</option>
-                            <option value="10000000">$10,000,000</option>
-                            <option value="11000000">$11,000,000</option>
-                            <option value="12000000">$12,000,000</option>
-                            <option value="13000000">$13,000,000</option>
-                            <option value="14000000">$14,000,000</option>
-                            <option value="15000000">$15,000,000</option>
-                            <option value="16000000">$16,000,000</option>
-                            <option value="17000000">$17,000,000</option>
-                            <option value="18000000">$18,000,000</option>
-                            <option value="19000000">$19,000,000</option>
-                            <option value="20000000">$20,000,000</option>
-                            <option value="25000000">$25,000,000</option>
-                            <option value="30000000">$30,000,000</option>
-                            <option value="35000000">$35,000,000</option>
-                            <option value="40000000">$40,000,000</option>
-                            <option value="45000000">$45,000,000</option>
-                            <option value="50000000">$50,000,000</option>
+                            <option value="250000">$0.25M</option>
+                            <option value="500000">$0.5M</option>
+                            <option value="750000">$0.75M</option>
+                            <option value="1000000">$1M</option>
+                            <option value="2000000">$2M</option>
+                            <option value="3000000">$3M</option>
+                            <option value="4000000">$4M</option>
+                            <option value="5000000">$5M</option>
+                            <option value="6000000">$6M</option>
+                            <option value="7000000">$7M</option>
+                            <option value="8000000">$8M</option>
+                            <option value="9000000">$9M</option>
+                            <option value="10000000">$10M</option>
+                            <option value="11000000">$11M</option>
+                            <option value="12000000">$12M</option>
+                            <option value="13000000">$13M</option>
+                            <option value="14000000">$14M</option>
+                            <option value="15000000">$15M</option>
+                            <option value="16000000">$16M</option>
+                            <option value="17000000">$17M</option>
+                            <option value="18000000">$18M</option>
+                            <option value="19000000">$19M</option>
+                            <option value="20000000">$20M</option>
+                            <option value="25000000">$25M</option>
+                            <option value="30000000">$30M</option>
+                            <option value="35000000">$35M</option>
+                            <option value="40000000">$40M</option>
+                            <option value="45000000">$45M</option>
+                            <option value="50000000">$50M</option>
                         </select>
                     </div>
                     

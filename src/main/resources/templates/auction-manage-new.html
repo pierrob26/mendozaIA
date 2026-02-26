@@ -254,7 +254,7 @@
                     
                     <div class="bid-info">
                         <div th:if="${item.currentBid != null}">
-                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span></div>
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span>M</div>
                             <div style="font-size: 0.9em; color: #6c757d;">
                                 Current High Bid
                                 <span th:if="${highestBids.get(item.id) != null}">
@@ -263,7 +263,7 @@
                             </div>
                         </div>
                         <div th:if="${item.currentBid == null}">
-                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 0, 0)}">1</span></div>
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 0, 0)}">1</span>M</div>
                             <div style="font-size: 0.9em; color: #6c757d;">Starting Bid • No bids yet</div>
                         </div>
                     </div>

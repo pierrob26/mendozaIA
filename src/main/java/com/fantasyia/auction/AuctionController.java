@@ -51,7 +51,6 @@ public class AuctionController {
     @GetMapping("/manage")
     public String manageAuctions(Model model) {
         try {
-            // Get current authenticated user
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -60,10 +59,8 @@ public class AuctionController {
                 return "redirect:/";
             }
 
-            // Get or create the main auction
             Auction mainAuction = getOrCreateMainAuction(user.getId());
             
-            // Get all auction items for this auction
             List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
             if (activeItems == null) {
                 activeItems = new java.util.ArrayList<>();
@@ -74,13 +71,11 @@ public class AuctionController {
                 expiredItems = new java.util.ArrayList<>();
             }
             
-            // Get free agents available for adding to auction
             List<Player> freeAgents = playerRepository.findByOwnerIdIsNull();
             if (freeAgents == null) {
                 freeAgents = new java.util.ArrayList<>();
             }
             
-            // Remove players already in auction
             if (!activeItems.isEmpty()) {
                 List<Long> auctionPlayerIds = activeItems.stream()
                     .map(AuctionItem::getPlayerId)
@@ -91,26 +86,22 @@ public class AuctionController {
                     .collect(Collectors.toList());
             }
             
-            // Get pending released players from the queue
             List<ReleasedPlayer> releasedPlayersQueue = releasedPlayerRepository.findByStatusOrderByReleasedAtDesc("PENDING");
             if (releasedPlayersQueue == null) {
                 releasedPlayersQueue = new java.util.ArrayList<>();
             }
             
-            // Get pending contracts
             List<PendingContract> pendingContracts = pendingContractRepository.findByStatus("PENDING");
             if (pendingContracts == null) {
                 pendingContracts = new java.util.ArrayList<>();
             }
             
-            // Check for expired contracts and handle them
             try {
                 handleExpiredContracts();
             } catch (Exception e) {
                 System.err.println("Warning: Error handling expired contracts: " + e.getMessage());
             }
             
-            // Get players and their details for active items - with comprehensive null checks
             Map<Long, Player> playersMap = new java.util.HashMap<>();
             if (!activeItems.isEmpty()) {
                 List<Long> playerIds = activeItems.stream()
@@ -133,14 +124,12 @@ public class AuctionController {
                     }
                 }
                 
-                // Filter out auction items for players that don't exist
                 List<AuctionItem> validItems = activeItems.stream()
                     .filter(item -> item != null && item.getPlayerId() != null && playersMap.containsKey(item.getPlayerId()))
                     .collect(Collectors.toList());
                 activeItems = validItems;
             }
             
-            // Get highest bids and minimum next bid for each item
             Map<Long, Bid> highestBids = new java.util.HashMap<>();
             Map<Long, Double> minimumNextBids = new java.util.HashMap<>();
             for (AuctionItem item : activeItems) {
@@ -174,7 +163,6 @@ public class AuctionController {
             System.err.println("=== ERROR IN MANAGE AUCTIONS ===");
             e.printStackTrace();
             
-            // Initialize all collections as empty to prevent template errors
             model.addAttribute("activeItems", new java.util.ArrayList<>());
             model.addAttribute("expiredItems", new java.util.ArrayList<>());
             model.addAttribute("freeAgents", new java.util.ArrayList<>());
@@ -193,37 +181,31 @@ public class AuctionController {
     @GetMapping("/view")
     public String viewAuction(Model model) {
         try {
-            // Get current user first
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = auth.getName();
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
             
-            // Get or create the main auction (commissioners can create, others just view)
             Auction mainAuction = getMainAuction();
             if (mainAuction == null) {
                 if (user != null && "COMMISSIONER".equals(user.getRole())) {
-                    // Only commissioners can create auctions
                     mainAuction = new Auction(
                         "Main Player Auction", 
                         LocalDateTime.now(), 
-                        LocalDateTime.now().plusYears(1), // Always running
-                        user.getId(), // Use current commissioner's ID
+                        LocalDateTime.now().plusYears(1),
+                        user.getId(),
                         "In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments."
                     );
                     mainAuction.setAuctionType("IN_SEASON");
                     mainAuction = auctionRepository.save(mainAuction);
                 } else {
-                    // Non-commissioners can't create auctions, show empty view
                     model.addAttribute("noAuction", true);
                     model.addAttribute("message", "No auction is currently active. Contact a commissioner to create one.");
                     return "auction-view";
                 }
             }
             
-            // Get active auction items
             List<AuctionItem> activeItems = auctionItemRepository.findByAuctionIdAndStatus(mainAuction.getId(), "ACTIVE");
             
-            // Get players and their details - with null check
             Map<Long, Player> playersMap = new java.util.HashMap<>();
             if (!activeItems.isEmpty()) {
                 List<Long> playerIds = activeItems.stream()
@@ -235,14 +217,12 @@ public class AuctionController {
                     playersMap.put(player.getId(), player);
                 }
                 
-                // Filter out auction items for players that don't exist
                 List<AuctionItem> validItems = activeItems.stream()
                     .filter(item -> playersMap.containsKey(item.getPlayerId()))
                     .collect(Collectors.toList());
                 activeItems = validItems;
             }
             
-            // Get highest bids, bid counts, and minimum next bids
             Map<Long, Bid> highestBids = new java.util.HashMap<>();
             Map<Long, Long> bidCounts = new java.util.HashMap<>();
             Map<Long, Double> minimumNextBids = new java.util.HashMap<>();
@@ -259,7 +239,6 @@ public class AuctionController {
                 minimumNextBids.put(item.getId(), item.getMinimumNextBid(mainAuction.getAuctionType()));
             }
             
-            // Get user's recent bids if logged in
             Map<Long, List<Bid>> userBids = new java.util.HashMap<>();
             List<PendingContract> userPendingContracts = new java.util.ArrayList<>();
             if (user != null) {
@@ -270,7 +249,6 @@ public class AuctionController {
                     }
                 }
                 
-                // Get user's pending contracts
                 userPendingContracts = pendingContractRepository.findByWinnerIdAndStatus(user.getId(), "PENDING");
             }
             
@@ -300,7 +278,6 @@ public class AuctionController {
                                    @RequestParam(defaultValue = "0.5") Double startingBid,
                                    RedirectAttributes redirectAttributes) {
         
-        // Check commissioner permissions
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -311,28 +288,22 @@ public class AuctionController {
         }
 
         try {
-            // Get or create main auction
             Auction mainAuction = getOrCreateMainAuction(user.getId());
             
-            // Check if player is already in auction
             AuctionItem existingItem = auctionItemRepository.findByPlayerIdAndStatus(playerId, "ACTIVE");
             if (existingItem != null) {
                 redirectAttributes.addFlashAttribute("error", "Player is already in auction");
                 return "redirect:/auction/manage";
             }
             
-            // Check if player is free agent
             Player player = playerRepository.findById(playerId).orElse(null);
             if (player == null || player.getOwnerId() != null) {
                 redirectAttributes.addFlashAttribute("error", "Player is not a free agent");
                 return "redirect:/auction/manage";
             }
-            
-            // Set minimum bid based on player type
-            // MLB players: $500K minimum
-            // Minor leaguers: $100K minimum
+
             boolean isMinorLeaguer = player.getIsMinorLeaguer() || player.getIsRookie();
-            double minBid = isMinorLeaguer ? 0.1 : 0.5; // $100K for minors, $500K for MLB
+            double minBid = isMinorLeaguer ? 0.1 : 0.5;
             
             if (startingBid < minBid) {
                 startingBid = minBid;
@@ -341,7 +312,6 @@ public class AuctionController {
                         minBid, isMinorLeaguer ? "minor league" : "MLB"));
             }
             
-            // Create auction item
             AuctionItem auctionItem = new AuctionItem(playerId, mainAuction.getId(), startingBid, isMinorLeaguer, user.getId());
             auctionItemRepository.save(auctionItem);
             
@@ -364,7 +334,6 @@ public class AuctionController {
                           @RequestParam Double bidAmount,
                           RedirectAttributes redirectAttributes) {
         
-        // Get current user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -374,7 +343,6 @@ public class AuctionController {
         }
 
         try {
-            // Use the service to place bid with all validation
             AuctionService.BidResult result = auctionService.placeBid(auctionItemId, user.getId(), bidAmount);
             
             if (result.isSuccess()) {
@@ -400,7 +368,6 @@ public class AuctionController {
         System.out.println("Released Player ID: " + releasedPlayerId);
         System.out.println("Starting Bid: " + startingBid);
         
-        // Check commissioner permissions
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -411,7 +378,6 @@ public class AuctionController {
         }
 
         try {
-            // Get released player from queue
             ReleasedPlayer releasedPlayer = releasedPlayerRepository.findById(releasedPlayerId).orElse(null);
             if (releasedPlayer == null) {
                 redirectAttributes.addFlashAttribute("error", "Released player not found");
@@ -425,30 +391,26 @@ public class AuctionController {
             
             System.out.println("Found released player: " + releasedPlayer.getPlayerName());
             
-            // Get or create main auction
             Auction mainAuction = getOrCreateMainAuction(user.getId());
             System.out.println("Main auction ID: " + mainAuction.getId());
             
-            // Create new player as free agent
             Player player = new Player(
                 releasedPlayer.getPlayerName(),
                 releasedPlayer.getPosition(),
                 releasedPlayer.getMlbTeam(),
                 Integer.valueOf(0),
                 Double.valueOf(0.0),
-                null  // Free agent (no owner)
+                null
             );
             
             System.out.println("Saving player: " + player.getName());
             player = playerRepository.save(player);
             System.out.println("Player saved with ID: " + player.getId());
             
-            // Add player to auction
             AuctionItem auctionItem = new AuctionItem(player.getId(), mainAuction.getId(), startingBid);
             auctionItemRepository.save(auctionItem);
             System.out.println("Auction item created");
             
-            // Update released player status
             releasedPlayer.setStatus("ADDED_TO_AUCTION");
             releasedPlayerRepository.save(releasedPlayer);
             System.out.println("Released player status updated");
@@ -474,7 +436,6 @@ public class AuctionController {
         System.out.println("=== REJECT RELEASED PLAYER ===");
         System.out.println("Released Player ID: " + releasedPlayerId);
         
-        // Check commissioner permissions
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -498,7 +459,6 @@ public class AuctionController {
             
             System.out.println("Rejecting player: " + releasedPlayer.getPlayerName());
             
-            // Mark as rejected
             releasedPlayer.setStatus("REJECTED");
             releasedPlayerRepository.save(releasedPlayer);
             
@@ -520,7 +480,6 @@ public class AuctionController {
     public String removePlayerFromAuction(@PathVariable Long itemId,
                                         RedirectAttributes redirectAttributes) {
         
-        // Check commissioner permissions
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -537,14 +496,12 @@ public class AuctionController {
                 return "redirect:/auction/manage";
             }
             
-            // Get auction to check type
             Auction auction = auctionRepository.findById(auctionItem.getAuctionId()).orElse(null);
             if (auction == null) {
                 redirectAttributes.addFlashAttribute("error", "Auction not found");
                 return "redirect:/auction/manage";
             }
             
-            // Use service to award player (validates timing rules)
             if (auctionItem.getCurrentBidderId() != null) {
                 AuctionService.ContractResult result = auctionService.awardPlayer(itemId);
                 
@@ -554,7 +511,6 @@ public class AuctionController {
                     redirectAttributes.addFlashAttribute("error", result.getMessage());
                 }
             } else {
-                // No bids, just remove
                 auctionItem.setStatus("REMOVED");
                 auctionItemRepository.save(auctionItem);
                 redirectAttributes.addFlashAttribute("success", "Player removed from auction (no bids)");
@@ -573,7 +529,6 @@ public class AuctionController {
                               @RequestParam Integer contractYears,
                               RedirectAttributes redirectAttributes) {
         
-        // Get current user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -583,7 +538,6 @@ public class AuctionController {
         }
 
         try {
-            // Use service to post contract with all validation
             AuctionService.ContractResult result = auctionService.postContract(pendingContractId, user.getId(), contractYears);
             
             if (result.isSuccess()) {
@@ -604,7 +558,6 @@ public class AuctionController {
     public String buyoutPlayer(@RequestParam Long pendingContractId,
                               RedirectAttributes redirectAttributes) {
         
-        // Get current user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -614,7 +567,6 @@ public class AuctionController {
         }
 
         try {
-            // Use service to process buyout
             AuctionService.ContractResult result = auctionService.buyoutPlayer(pendingContractId, user.getId());
             
             if (result.isSuccess()) {
@@ -631,23 +583,20 @@ public class AuctionController {
         return "redirect:/auction/view";
     }
 
-    // Helper methods
     private void handleExpiredContracts() {
         auctionService.processExpiredContracts();
     }
 
-    // Helper methods
     private Auction getOrCreateMainAuction(Long commissionerId) {
         List<Auction> activeAuctions = auctionRepository.findByStatus("ACTIVE");
         if (!activeAuctions.isEmpty()) {
             return activeAuctions.get(0);
         }
         
-        // Create main auction - default to IN_SEASON
         Auction mainAuction = new Auction(
             "Main Player Auction", 
             LocalDateTime.now(), 
-            LocalDateTime.now().plusYears(1), // Always running
+            LocalDateTime.now().plusYears(1),
             commissionerId,
             "In-Season Free Agency: Players require 24 hours after first bid. Dynamic minimum bid increments based on time elapsed."
         );
@@ -675,7 +624,6 @@ public class AuctionController {
         try {
             Auction mainAuction = getOrCreateMainAuction(user.getId());
             
-            // Toggle between IN_SEASON and OFF_SEASON
             if ("IN_SEASON".equals(mainAuction.getAuctionType())) {
                 mainAuction.setAuctionType("OFF_SEASON");
                 mainAuction.setDescription("Off-Season Free Agency: Players require 72 hours after first bid. Extended minimum bid increments.");

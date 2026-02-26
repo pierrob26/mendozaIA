@@ -16,10 +16,8 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     
     List<Player> findByOwnerIdAndPosition(Long ownerId, String position);
     
-    // Find free agents (players without contracts)
     List<Player> findByOwnerIdIsNull();
     
-    // Find players without contracts (regardless of ownership)
     List<Player> findByContractLengthIsNullAndContractAmountIsNull();
     
     @Query("SELECT p FROM Player p WHERE p.ownerId = :ownerId " +
@@ -35,13 +33,11 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
                                       @Param("minSalary") Double minSalary,
                                       @Param("maxSalary") Double maxSalary);
     
-    // Clear all contracts for all players (make them free agents)
     @Modifying
     @Transactional
     @Query("UPDATE Player p SET p.contractLength = 0, p.contractAmount = 0.0, p.ownerId = null")
     void clearAllContracts();
-    
-    // Release specific players to free agency
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
     @Query("UPDATE Player p SET p.contractLength = 0, p.contractAmount = 0.0, p.ownerId = null WHERE p.id IN :playerIds")

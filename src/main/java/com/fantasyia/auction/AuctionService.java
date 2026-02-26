@@ -67,14 +67,7 @@ public class AuctionService {
         }
         return item.getCurrentBid() + calculateMinimumBidIncrement(item, auctionType);
     }
-
-    /**
-     * Validate if a bid meets all requirements.
-     * Rule xi: Bids cannot be made that put team over $100M salary cap
-     * Rule xi(1): Such bids will be disregarded
-     */
     public BidValidationResult validateBid(Long auctionItemId, Long bidderId, Double bidAmount) {
-        // Get auction item
         AuctionItem item = auctionItemRepository.findById(auctionItemId).orElse(null);
         if (item == null) {
             return new BidValidationResult(false, "Auction item not found");
@@ -84,20 +77,16 @@ public class AuctionService {
             return new BidValidationResult(false, "This auction is no longer active");
         }
 
-        // Get auction
         Auction auction = auctionRepository.findById(item.getAuctionId()).orElse(null);
         if (auction == null) {
             return new BidValidationResult(false, "Auction not found");
         }
 
-        // Get user
         UserAccount user = userAccountRepository.findById(bidderId).orElse(null);
         if (user == null) {
             return new BidValidationResult(false, "User not found");
         }
 
-        // Rule xi: Check if bid would put user over salary cap ($100M)
-        // This bid will count against cap space, so check available space
         if (!user.canAffordPlayer(bidAmount)) {
             return new BidValidationResult(false, 
                 String.format("INVALID BID: This bid would exceed the $100M salary cap. Your available cap space is $%.1fM. " +
@@ -105,14 +94,12 @@ public class AuctionService {
                     user.getAvailableCapSpace(), user.getCurrentSalaryUsed(), bidAmount));
         }
 
-        // Check roster space (Rule 8(f)(i) and Rule x)
         if (!user.hasRosterSpace(item.getIsMinorLeaguer())) {
             String rosterType = item.getIsMinorLeaguer() ? "minor league (25 max)" : "major league (40 max)";
             return new BidValidationResult(false, 
                 "You have reached the " + rosterType + " roster limit. You must make room before bidding.");
         }
 
-        // Check minimum bid (Updated: $500K increment for all players)
         double minBid = getMinimumNextBid(item, auction.getAuctionType());
         if (bidAmount < minBid) {
             String playerType = item.getIsMinorLeaguer() ? "minor league" : "MLB";
@@ -130,11 +117,6 @@ public class AuctionService {
         return new BidValidationResult(true, "Bid is valid");
     }
 
-    /**
-     * Place a bid on an auction item.
-     * Rule 6: Cannot delete bid once placed
-     * Each bid resets the timer - auction must stand for full period after LAST bid
-     */
     @Transactional
     public BidResult placeBid(Long auctionItemId, Long bidderId, Double bidAmount) {
         // Validate bid
@@ -143,12 +125,10 @@ public class AuctionService {
             return new BidResult(false, validation.getMessage(), null);
         }
 
-        // Get entities
         AuctionItem item = auctionItemRepository.findById(auctionItemId).orElse(null);
         Auction auction = auctionRepository.findById(item.getAuctionId()).orElse(null);
         Player player = playerRepository.findById(item.getPlayerId()).orElse(null);
 
-        // Create bid
         Bid bid = new Bid(auctionItemId, bidderId, bidAmount);
         bidRepository.save(bid);
 
@@ -160,10 +140,7 @@ public class AuctionService {
             // Rule 6: Once bid is placed, cannot delete
             item.setCanDeleteBid(false);
         }
-        
-        // CRITICAL: Each new bid resets the timer
-        // Rule 7 (In-Season): Must stand 24 hours after LAST bid
-        // Rule vii (Off-Season): Must stand 72 hours after LAST bid
+
         item.setLastBidTime(now);
         int requiredHours = "IN_SEASON".equals(auction.getAuctionType()) ? 24 : 72;
         item.setEndTime(now.plusHours(requiredHours));
@@ -171,12 +148,10 @@ public class AuctionService {
         item.setCurrentBid(bidAmount);
         item.setCurrentBidderId(bidderId);
         
-        // Set the fixed minimum increment (no need to track changes)
         item.setCurrentMinimumIncrement(calculateMinimumBidIncrement(item, auction.getAuctionType()));
         
         auctionItemRepository.save(item);
 
-        // Mark previous bids as outbid
         List<Bid> previousBids = bidRepository.findByAuctionItemIdOrderByAmountDesc(auctionItemId);
         for (Bid prevBid : previousBids) {
             if (!prevBid.getId().equals(bid.getId())) {
@@ -192,14 +167,9 @@ public class AuctionService {
         return new BidResult(true, message, bid);
     }
 
-    /**
-     * Check if an auction item is ready to be won (minimum time elapsed since LAST bid).
-     * Rule 7: In-Season = 24 hours after LAST bid
-     * Rule vii: Off-Season = 72 hours after LAST bid
-     */
     public boolean isReadyToWin(AuctionItem item, String auctionType) {
         if (item.getLastBidTime() == null) {
-            return false; // No bids yet
+            return false;
         }
 
         long hoursElapsed = Duration.between(item.getLastBidTime(), LocalDateTime.now()).toHours();
@@ -208,11 +178,6 @@ public class AuctionService {
         return hoursElapsed >= requiredHours;
     }
 
-    /**
-     * Award player to winning bidder and create pending contract.
-     * Rule 7: Winner has 48 hours to post contract
-     * Rule 8(f)(i): If roster over limit, winner has 24h (in-season) or 48h (off-season) to comply
-     */
     @Transactional
     public ContractResult awardPlayer(Long auctionItemId) {
         AuctionItem item = auctionItemRepository.findById(auctionItemId).orElse(null);
@@ -225,7 +190,6 @@ public class AuctionService {
             return new ContractResult(false, "Auction not found");
         }
 
-        // Check if ready to win (Rule 7: 24h in-season, Rule vii: 72h off-season)
         if (!isReadyToWin(item, auction.getAuctionType())) {
             long hoursRemaining = calculateHoursRemaining(item, auction.getAuctionType());
             return new ContractResult(false, 
@@ -246,7 +210,6 @@ public class AuctionService {
             return new ContractResult(false, "Winner not found");
         }
 
-        // Create pending contract (Rule 7: 48 hours to post)
         PendingContract pendingContract = new PendingContract(
             item.getId(),
             player.getId(),
@@ -256,13 +219,9 @@ public class AuctionService {
         );
         pendingContractRepository.save(pendingContract);
 
-        // Update auction item status
         item.setStatus("AWAITING_CONTRACT");
-        item.setContractDeadline(LocalDateTime.now().plusHours(48)); // Rule 7: 48 hours to post contract
-        
-        // Set roster compliance deadline (Rule 8(f)(i) and Rule x)
-        // In-season: 24 hours to fix roster
-        // Off-season: 48 hours to fix roster
+        item.setContractDeadline(LocalDateTime.now().plusHours(48));
+
         int complianceHours = "IN_SEASON".equals(auction.getAuctionType()) ? 24 : 48;
         item.setRosterComplianceDeadline(LocalDateTime.now().plusHours(complianceHours));
         
@@ -273,9 +232,6 @@ public class AuctionService {
         return new ContractResult(true, message);
     }
 
-    /**
-     * Calculate hours remaining until auction can be won.
-     */
     public long calculateHoursRemaining(AuctionItem item, String auctionType) {
         if (item.getLastBidTime() == null) {
             return -1;
@@ -291,32 +247,19 @@ public class AuctionService {
         return Duration.between(LocalDateTime.now(), calculatedEndTime).toHours();
     }
 
-    /**
-     * Validate contract length based on rules.
-     */
     public ContractValidationResult validateContractLength(PendingContract contract, Integer years, Auction auction) {
-        // Rule 8: 1-5 years
         if (years < 1 || years > 5) {
             return new ContractValidationResult(false, "Contract must be between 1 and 5 years");
         }
 
-        // Rule 8(a): Players under $750K can only get 2 years max
         if (contract.getWinningBid() < 0.75 && years > 2) {
             return new ContractValidationResult(false, 
                 "Players signed under $750K can only receive max 2-year contracts");
         }
 
-        // Rule 8(f): Players after buyout deadline can only get 1 year
-        // TODO: Implement buyout deadline tracking
-        
         return new ContractValidationResult(true, "Contract length is valid");
     }
 
-    /**
-     * Post a contract for a won player.
-     * Rule 8: 1-5 years, with restrictions
-     * Rule 8(a): Players under $750K can only get 2-year max contracts
-     */
     @Transactional
     public ContractResult postContract(Long pendingContractId, Long userId, Integer contractYears) {
         PendingContract contract = pendingContractRepository.findById(pendingContractId).orElse(null);
@@ -324,21 +267,17 @@ public class AuctionService {
             return new ContractResult(false, "Pending contract not found");
         }
 
-        // Check if user is the winner
         if (!userId.equals(contract.getWinnerId())) {
             return new ContractResult(false, "You are not the winner of this auction");
         }
 
-        // Check if deadline passed (Rule 7(a): buyout fee = half of winning bid)
         if (contract.isDeadlinePassed()) {
-            // Apply buyout fee automatically
             applyBuyoutFee(contract);
             return new ContractResult(false, 
                 "Contract deadline has passed. Buyout fee of $" + 
                 String.format("%.1fM", contract.getBuyoutFee()) + " has been applied to your cap.");
         }
 
-        // Get auction to check type
         AuctionItem item = auctionItemRepository.findById(contract.getAuctionItemId()).orElse(null);
         Auction auction = item != null ? auctionRepository.findById(item.getAuctionId()).orElse(null) : null;
         
@@ -346,33 +285,28 @@ public class AuctionService {
             return new ContractResult(false, "Auction not found");
         }
 
-        // Validate contract length
         ContractValidationResult validation = validateContractLength(contract, contractYears, auction);
         if (!validation.isValid()) {
             return new ContractResult(false, validation.getMessage());
         }
 
-        // Get player
         Player player = playerRepository.findById(contract.getPlayerId()).orElse(null);
         if (player == null) {
             return new ContractResult(false, "Player not found");
         }
 
-        // Get user
         UserAccount user = userAccountRepository.findById(userId).orElse(null);
         if (user == null) {
             return new ContractResult(false, "User not found");
         }
 
-        // Assign player to winner
         player.setOwnerId(user.getId());
         player.setContractLength(contractYears);
-        player.setContractAmount(contract.getWinningBid() * contractYears); // Total contract value
-        player.setAverageAnnualSalary(contract.getWinningBid()); // AAS for cap purposes
+        player.setContractAmount(contract.getWinningBid() * contractYears);
+        player.setAverageAnnualSalary(contract.getWinningBid());
         player.setContractYear(1);
         playerRepository.save(player);
 
-        // Update user salary and roster counts
         user.setCurrentSalaryUsed(user.getCurrentSalaryUsed() + contract.getWinningBid());
         if (contract.getIsMinorLeaguer()) {
             user.setMinorLeagueRosterCount(user.getMinorLeagueRosterCount() + 1);
@@ -381,18 +315,15 @@ public class AuctionService {
         }
         userAccountRepository.save(user);
 
-        // Update pending contract
         contract.setStatus("POSTED");
         contract.setContractYears(contractYears);
         pendingContractRepository.save(contract);
 
-        // Update auction item
         if (item != null) {
             item.setStatus("SOLD");
             auctionItemRepository.save(item);
         }
 
-        // Check for roster violations after contract (Rule 8(f)(i) and Rule x)
         String rosterWarning = checkRosterLimits(user, contract.getIsMinorLeaguer(), auction.getAuctionType());
 
         String message = String.format("Contract posted for %s: %d years at $%.1fM AAS (Total: $%.1fM). %s",
@@ -401,9 +332,6 @@ public class AuctionService {
         return new ContractResult(true, message);
     }
 
-    /**
-     * Apply buyout fee when contract not posted in time (Rule 7(a) and vii(1)).
-     */
     @Transactional
     public void applyBuyoutFee(PendingContract contract) {
         UserAccount winner = userAccountRepository.findById(contract.getWinnerId()).orElse(null);
@@ -421,7 +349,6 @@ public class AuctionService {
             auctionItemRepository.save(item);
         }
 
-        // Player goes back to free agency
         Player player = playerRepository.findById(contract.getPlayerId()).orElse(null);
         if (player != null) {
             player.setOwnerId(null);
@@ -429,9 +356,6 @@ public class AuctionService {
         }
     }
 
-    /**
-     * Process buyout of won player (Rule 6 and vi).
-     */
     @Transactional
     public ContractResult buyoutPlayer(Long pendingContractId, Long userId) {
         PendingContract contract = pendingContractRepository.findById(pendingContractId).orElse(null);
@@ -443,7 +367,6 @@ public class AuctionService {
             return new ContractResult(false, "You are not the winner of this auction");
         }
 
-        // Apply buyout fee (half of winning bid)
         UserAccount user = userAccountRepository.findById(userId).orElse(null);
         if (user == null) {
             return new ContractResult(false, "User not found");
@@ -453,18 +376,14 @@ public class AuctionService {
         user.setCurrentSalaryUsed(user.getCurrentSalaryUsed() + buyoutFee);
         userAccountRepository.save(user);
 
-        // Update contract status
         contract.setStatus("BOUGHT_OUT");
         pendingContractRepository.save(contract);
 
-        // Update auction item
         AuctionItem item = auctionItemRepository.findById(contract.getAuctionItemId()).orElse(null);
         if (item != null) {
             item.setStatus("BOUGHT_OUT");
             auctionItemRepository.save(item);
         }
-
-        // Player returns to free agency
         Player player = playerRepository.findById(contract.getPlayerId()).orElse(null);
         String playerName = player != null ? player.getName() : "Player";
 
@@ -473,11 +392,6 @@ public class AuctionService {
         return new ContractResult(true, message);
     }
 
-    /**
-     * Check if user has exceeded roster limits.
-     * Rule 8(f)(i): In-Season = 24 hours to fix roster
-     * Rule x: Off-Season = 48 hours to fix roster
-     */
     private String checkRosterLimits(UserAccount user, boolean isMinorLeaguer, String auctionType) {
         int complianceHours = "IN_SEASON".equals(auctionType) ? 24 : 48;
         
@@ -491,9 +405,6 @@ public class AuctionService {
         return "";
     }
 
-    /**
-     * Process expired contracts and apply penalties.
-     */
     @Transactional
     public void processExpiredContracts() {
         List<PendingContract> expiredContracts = pendingContractRepository.findExpiredContracts(LocalDateTime.now());
@@ -507,9 +418,6 @@ public class AuctionService {
         }
     }
 
-    /**
-     * Auto-award players whose auction time has elapsed.
-     */
     @Transactional
     public void autoAwardExpiredAuctions() {
         List<Auction> activeAuctions = auctionRepository.findByStatus("ACTIVE");
@@ -525,7 +433,6 @@ public class AuctionService {
         }
     }
 
-    // Result classes
     public static class BidValidationResult {
         private final boolean valid;
         private final String message;

@@ -319,7 +319,7 @@
                     
                     <div class="bid-info">
                         <div th:if="${item.currentBid != null}">
-                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span></div>
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span>M</div>
                             <div style="font-size: 0.9em; color: #6c757d;">
                                 Current High Bid
                                 <span th:if="${highestBids.get(item.id) != null}">
@@ -328,7 +328,7 @@
                             </div>
                         </div>
                         <div th:if="${item.currentBid == null}">
-                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 0, 0)}">1</span></div>
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 0, 0)}">1</span>M</div>
                             <div style="font-size: 0.9em; color: #6c757d;">Starting Bid • No bids yet</div>
                         </div>
                     </div>
@@ -375,8 +375,8 @@
             <ul style="line-height: 1.6;">
                 <li><strong>Minimum Bids:</strong> 
                     <ul>
-                        <li>MLB Players: $500K minimum, $500K increments</li>
-                        <li>Minor League Players: $100K minimum, $500K increments</li>
+                        <li>MLB Players: $0.5M minimum, $0.5M increments</li>
+                        <li>Minor League Players: $0.1M minimum, $0.5M increments</li>
                     </ul>
                 </li>
                 <li><strong>Bidding:</strong> Each bid resets the timer - auction must stand 24 hours (in-season) or 72 hours (off-season) after the LAST bid</li>
@@ -384,7 +384,7 @@
                 <li><strong>Salary Cap:</strong> Bids cannot exceed the $100M salary cap</li>
                 <li><strong>Roster Limits:</strong> 40 MLB players max, 25 minor league players max</li>
                 <li><strong>No Bid Deletion:</strong> Once you bid or nominate a player, you cannot delete that bid</li>
-                <li><strong>Contract Terms:</strong> 1-5 years (players under $750K limited to 2 years max)</li>
+                <li><strong>Contract Terms:</strong> 1-5 years (players under $0.75M limited to 2 years max)</li>
             </ul>
         </div>
     </div>

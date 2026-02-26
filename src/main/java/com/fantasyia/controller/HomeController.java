@@ -10,6 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.List;
+
 @Controller
 public class HomeController {
 
@@ -33,6 +35,11 @@ public class HomeController {
                 model.addAttribute("pendingReleasedPlayersCount", pendingCount);
             }
         }
+        
+        // Add all teams (managers) with their salary information to display on home screen
+        List<UserAccount> teams = userAccountRepository.findByRoleOrderByUsername("MANAGER");
+        model.addAttribute("teams", teams);
+        
         return "home";
     }
 
