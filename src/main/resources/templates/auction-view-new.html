@@ -313,7 +313,7 @@
                     
                     <div class="bid-section">
                         <div th:if="${item.currentBid != null}">
-                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 0, 0)}">0</span>M</div>
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.currentBid, 1, 1)}">0.0</span>M</div>
                             <div class="bid-details">
                                 Current High Bid
                                 <span th:if="${bidCounts.get(item.id) != null and bidCounts.get(item.id) > 1}">
@@ -322,7 +322,7 @@
                             </div>
                         </div>
                         <div th:if="${item.currentBid == null}">
-                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 0, 0)}">1</span>M</div>
+                            <div class="current-bid">$<span th:text="${#numbers.formatDecimal(item.startingBid, 1, 1)}">0.5</span>M</div>
                             <div class="bid-details">Starting Bid • No bids yet</div>
                         </div>
                         
@@ -369,7 +369,7 @@
                         <h5>Your Bid History</h5>
                         <div class="bid-list">
                             <div th:each="bid : ${userBids.get(item.id)}" class="bid-entry">
-                                <span>$<span th:text="${#numbers.formatDecimal(bid.amount, 0, 0)}">0</span>M</span>
+                                <span>$<span th:text="${#numbers.formatDecimal(bid.amount, 1, 1)}">0.0</span>M</span>
                                 <span th:text="${#temporals.format(bid.bidTime, 'MMM d, h:mm a')}">Time</span>
                                 <span th:if="${bid.status == 'WINNING'}" style="color: #28a745; font-weight: bold;">WINNING</span>
                                 <span th:if="${bid.status == 'OUTBID'}" style="color: #dc3545;">OUTBID</span>

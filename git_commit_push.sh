@@ -26,7 +26,7 @@ echo "✅ All changes staged"
 
 echo ""
 echo "Step 3: Creating commit..."
-if git commit -F COMMIT_MESSAGE.txt; then
+if git commit -F COMMIT_MESSAGE_UPDATED.txt; then
     echo "✅ COMMIT SUCCESSFUL!"
     
     COMMIT_HASH=$(git rev-parse HEAD)
