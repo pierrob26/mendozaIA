@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -33,12 +34,16 @@ public class HomeController {
             if (user != null && "COMMISSIONER".equals(user.getRole())) {
                 long pendingCount = releasedPlayerRepository.countByStatus("PENDING");
                 model.addAttribute("pendingReleasedPlayersCount", pendingCount);
+                
+                // Only commissioners can see all team salary information
+                List<UserAccount> allTeams = userAccountRepository.findByRoleOrderByUsername("MANAGER");
+                model.addAttribute("teams", allTeams);
+            } else if (user != null && "MANAGER".equals(user.getRole())) {
+                // Regular managers only see their own salary information
+                List<UserAccount> currentUserTeam = Arrays.asList(user);
+                model.addAttribute("teams", currentUserTeam);
             }
         }
-        
-        // Add all teams (managers) with their salary information to display on home screen
-        List<UserAccount> teams = userAccountRepository.findByRoleOrderByUsername("MANAGER");
-        model.addAttribute("teams", teams);
         
         return "home";
     }

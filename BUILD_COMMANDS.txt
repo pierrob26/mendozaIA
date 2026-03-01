@@ -1,0 +1,15 @@
+#!/bin/bash
+# Simple Maven build commands for FantasyIA
+# Run these commands in terminal from the project root directory
+
+echo "Execute these commands in your terminal:"
+echo ""
+echo "cd /Users/robbypierson/IdeaProjects/fantasyIA"
+echo "mvn clean"
+echo "mvn compile"
+echo ""
+echo "Or run them together:"
+echo "mvn clean compile"
+echo ""
+echo "To run the application after building:"
+echo "mvn spring-boot:run"

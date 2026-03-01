@@ -10,7 +10,10 @@
 
 <!-- Team Salary Overview -->
 <div th:if="${teams != null and !teams.isEmpty()}" style="margin: 20px 0; background: #f8f9fa; padding: 20px; border-radius: 8px;">
-    <h2 style="margin-bottom: 15px; color: #333;">🏦 Team Salary Overview</h2>
+    <h2 style="margin-bottom: 15px; color: #333;" 
+        th:text="${currentUser != null and currentUser.role == 'COMMISSIONER'} ? '🏦 All Teams Salary Overview' : '🏦 My Team Salary Overview'">
+        🏦 Team Salary Overview
+    </h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
         <div th:each="team : ${teams}" style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6;">
             <h3 style="margin: 0 0 10px 0; color: #495057; font-size: 1.1em;" th:text="${team.username}">Team Name</h3>

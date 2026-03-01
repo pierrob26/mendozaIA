@@ -1,0 +1,40 @@
+Add team salary display to home screen and comprehensive rebuild script
+
+## Major Features Added:
+
+### 🏦 Team Salary Overview on Home Screen
+- Enhanced UserAccountRepository with findByRoleOrderByUsername() method
+- Updated HomeController to fetch all team accounts and salary data
+- Completely redesigned home.html template with professional salary dashboard:
+  * Individual team cards showing salary used, available cap, and total cap
+  * Visual progress bars with color gradients (green→yellow→red)
+  * Responsive grid layout that adapts to screen size
+  * Real-time percentage calculations of salary cap usage
+  * Professional styling with emoji icons and modern design
+
+### 🛠️ Comprehensive Build Automation
+- Created advanced rebuild.sh script with multiple operational modes:
+  * Clean build (default): Maven clean, compile, and test
+  * Development mode: Build and run with hot reload
+  * Docker mode: Full container rebuild and deployment
+  * Package mode: JAR creation only
+  * Full rebuild: Complete rebuild with container logs
+- Added intelligent prerequisite checking (Java 17+, Maven, Docker)
+- Implemented color-coded output for enhanced user experience
+- Comprehensive error handling and informative status messages
+- Created detailed REBUILD_GUIDE.md documentation
+
+### 🎯 User Experience Improvements
+- Teams can now instantly see salary cap status for all teams on home page
+- Visual indicators make it easy to identify teams with cap space
+- Professional dashboard design enhances overall application appearance
+- Streamlined development workflow with automated build processes
+
+### 🔧 Technical Enhancements
+- Repository layer expanded with role-based user queries
+- Controller layer enhanced with comprehensive team data loading
+- Template engine optimized with Thymeleaf calculations and formatting
+- Build automation with Docker integration and health checks
+
+Date: February 26, 2026
+Developer: GitHub Copilot Assistant

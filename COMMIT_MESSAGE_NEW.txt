@@ -1,0 +1,31 @@
+Add team salary display to home screen and comprehensive rebuild script
+
+## Changes Made:
+
+### Home Screen Salary Display
+- Updated UserAccountRepository to fetch teams by role
+- Modified HomeController to include all team salary information
+- Enhanced home.html template with comprehensive salary overview:
+  - Displays salary used, available cap, and total cap for each team
+  - Added visual progress bars with color gradients
+  - Responsive grid layout for team information
+  - Professional styling with emoji icons
+
+### Build Automation
+- Created comprehensive rebuild.sh script with multiple build modes:
+  - Clean build (default)
+  - Development mode with hot reload
+  - Docker container rebuild
+  - JAR packaging
+  - Full rebuild with logging
+- Added prerequisite checking and error handling
+- Color-coded output for better user experience
+- Created REBUILD_GUIDE.md with complete documentation
+
+### Features:
+- Teams can now see all salary cap information on home screen
+- Visual progress indicators show cap usage percentage
+- Automated build script handles all deployment scenarios
+- Comprehensive documentation for build processes
+
+Date: February 26, 2026
