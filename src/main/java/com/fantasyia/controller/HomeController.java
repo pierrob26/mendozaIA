@@ -35,9 +35,10 @@ public class HomeController {
                 long pendingCount = releasedPlayerRepository.countByStatus("PENDING");
                 model.addAttribute("pendingReleasedPlayersCount", pendingCount);
                 
-                // Only commissioners can see all team salary information
-                List<UserAccount> allTeams = userAccountRepository.findByRoleOrderByUsername("MANAGER");
-                model.addAttribute("teams", allTeams);
+                // Commissioners see only their own salary information on home page
+                // (they can see all teams via the manage auction page if needed)
+                List<UserAccount> currentUserTeam = Arrays.asList(user);
+                model.addAttribute("teams", currentUserTeam);
             } else if (user != null && "MANAGER".equals(user.getRole())) {
                 // Regular managers only see their own salary information
                 List<UserAccount> currentUserTeam = Arrays.asList(user);
