@@ -27,7 +27,6 @@ public class CustomErrorController implements ErrorController {
                 model.addAttribute("errorTitle", "Internal Server Error");
                 model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
                 
-                // Log the actual error for debugging
                 if (exception != null) {
                     System.err.println("=== 500 ERROR ===");
                     System.err.println("Exception: " + exception);

@@ -13,42 +13,41 @@ public class Player {
     private String name;
 
     @Column(nullable = false)
-    private String position; // Baseball positions: C, 1B, 2B, 3B, SS, OF, SP, RP, DH
+    private String position;
 
     @Column(name = "mlb_team", nullable = false)
-    private String team; // MLB team
+    private String team;
 
     @Column
-    private Integer contractLength; // in years (null for free agents)
+    private Integer contractLength;
 
     @Column
-    private Double contractAmount; // total contract amount (null for free agents)
+    private Double contractAmount;
 
     @Column
-    private Double averageAnnualSalary; // AAS - used for cap calculations
+    private Double averageAnnualSalary;
 
     @Column(name = "owner_id")
-    private Long ownerId; // foreign key to UserAccount
+    private Long ownerId;
 
     @Column
-    private Boolean isMinorLeaguer; // true for prospects/minor leaguers
+    private Boolean isMinorLeaguer;
 
     @Column
-    private Boolean isRookie; // true if player has not eclipsed rookie stats (130 AB or 50 IP)
+    private Boolean isRookie;
 
     @Column
-    private Integer atBats; // Track at-bats for rookie status
+    private Integer atBats;
 
     @Column
-    private Integer inningsPitched; // Track innings pitched for rookie status
+    private Integer inningsPitched;
 
     @Column
-    private Boolean isOnFortyManRoster; // Track if player is on 40-man roster
+    private Boolean isOnFortyManRoster;
 
     @Column
-    private Integer contractYear; // Current year of contract (0 = free agent)
+    private Integer contractYear;
 
-    // Constructors
     public Player() {}
 
     public Player(String name, String position, String team, Integer contractLength, Double contractAmount, Long ownerId) {
@@ -63,7 +62,6 @@ public class Player {
         this.isOnFortyManRoster = false;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

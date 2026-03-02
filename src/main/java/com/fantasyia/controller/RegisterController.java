@@ -31,26 +31,22 @@ public class RegisterController {
                               @RequestParam String role,
                               RedirectAttributes redirectAttributes) {
         try {
-            // Check if username already exists
             if (userAccountRepository.findByUsername(username).isPresent()) {
                 redirectAttributes.addFlashAttribute("error", "Username already exists");
                 return "redirect:/register";
             }
 
-            // Validate role
             if (!role.equals("MANAGER") && !role.equals("COMMISSIONER")) {
                 redirectAttributes.addFlashAttribute("error", "Invalid role selected");
                 return "redirect:/register";
             }
 
-            // Create new user account
             UserAccount newUser = new UserAccount();
             newUser.setUsername(username);
             newUser.setPassword(passwordEncoder.encode(password));
             newUser.setRole(role);
             
-            // Initialize salary cap and roster counts
-            newUser.setSalaryCap(100.0); // $100M default
+            newUser.setSalaryCap(125.0); // $125M default
             newUser.setCurrentSalaryUsed(0.0);
             newUser.setMajorLeagueRosterCount(0);
             newUser.setMinorLeagueRosterCount(0);

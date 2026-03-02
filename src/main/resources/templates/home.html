@@ -8,7 +8,6 @@
 <body>
 <h1>Dynasty Mendoza Baseball League</h1>
 
-<!-- Team Salary Overview -->
 <div th:if="${teams != null and !teams.isEmpty()}" style="margin: 20px 0; background: #f8f9fa; padding: 20px; border-radius: 8px;">
     <h2 style="margin-bottom: 15px; color: #333;">🏦 My Team Salary Overview</h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
@@ -21,11 +20,11 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <span>💳 Available Cap:</span>
-                    <span style="font-weight: bold; color: #28a745;" th:text="'$' + ${#numbers.formatDecimal(team.availableCapSpace, 1, 1)} + 'M'">$100.0M</span>
+                    <span style="font-weight: bold; color: #28a745;" th:text="'$' + ${#numbers.formatDecimal(team.availableCapSpace, 1, 1)} + 'M'">$125.0M</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <span>🏟️ Salary Cap:</span>
-                    <span style="font-weight: bold; color: #007bff;" th:text="'$' + ${#numbers.formatDecimal(team.salaryCap, 1, 1)} + 'M'">$100.0M</span>
+                    <span style="font-weight: bold; color: #007bff;" th:text="'$' + ${#numbers.formatDecimal(team.salaryCap, 1, 1)} + 'M'">$125.0M</span>
                 </div>
                 <div style="margin-top: 8px; background: #e9ecef; border-radius: 10px; height: 8px; position: relative;">
                     <div style="background: linear-gradient(90deg, #28a745, #ffc107, #dc3545); border-radius: 10px; height: 100%; transition: width 0.3s ease;" 
@@ -46,7 +45,6 @@
         <p><a th:href="@{/auction/view}" style="background: #007bff; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">🏆 Player Auction</a></p>
     </div>
     
-    <!-- Commissioner-only features -->
     <div th:if="${currentUser.role == 'COMMISSIONER'}" style="margin: 20px 0;">
         <p>
             <a th:href="@{/auction/manage}" style="background: #e74c3c; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block; position: relative;">

@@ -107,7 +107,6 @@ public class TeamController {
                            @RequestParam(required = false) Double contractAmount,
                            RedirectAttributes redirectAttributes) {
         
-        // Get current authenticated user
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
@@ -116,7 +115,6 @@ public class TeamController {
             return "redirect:/login";
         }
 
-        // Validate required fields
         if (name == null || name.trim().isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Player name is required");
             return "redirect:/team";
@@ -132,7 +130,6 @@ public class TeamController {
             return "redirect:/team";
         }
 
-        // Validate position
         String[] validPositions = {"C", "1B", "2B", "3B", "SS", "OF", "DH", "SP", "RP"};
         boolean validPosition = false;
         for (String validPos : validPositions) {
@@ -153,7 +150,6 @@ public class TeamController {
         try {
             Player player = new Player(name.trim(), position, team.trim(), finalContractLength, finalContractAmount, user.getId());
 
-            // Calculate Average Annual Salary for salary cap purposes
             if (finalContractLength > 0 && finalContractAmount > 0) {
                 player.setAverageAnnualSalary(finalContractAmount / finalContractLength);
             } else {
@@ -194,7 +190,6 @@ public class TeamController {
             return "redirect:/team";
         }
 
-        // Check file extension
         String fileName = file.getOriginalFilename();
         if (fileName == null || (!fileName.toLowerCase().endsWith(".xlsx") && !fileName.toLowerCase().endsWith(".xls"))) {
             redirectAttributes.addFlashAttribute("error", "Invalid file format. Please use .xlsx or .xls files only.");

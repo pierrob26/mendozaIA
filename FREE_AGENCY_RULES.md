@@ -84,7 +84,7 @@ The auction system has been completely reworked to follow comprehensive Free Age
 - `contractYear`: Integer tracking current contract year
 
 ### UserAccount Enhancements
-- `salaryCap`: Double (default $100M)
+- `salaryCap`: Double (default $125M)
 - `currentSalaryUsed`: Double tracking committed salary
 - `majorLeagueRosterCount`: Integer (max 40)
 - `minorLeagueRosterCount`: Integer (max 25)
@@ -129,6 +129,6 @@ The auction system has been completely reworked to follow comprehensive Free Age
 All monetary values are stored in millions of dollars:
 - $500K = 0.5
 - $1M = 1.0
-- $100M = 100.0
+- $125M = 125.0
 
 This ensures precision and simplifies calculations throughout the system.

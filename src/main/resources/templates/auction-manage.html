@@ -168,7 +168,6 @@
             <p><a th:href="@{/}" style="color: white;">← Back to Home</a> | <a th:href="@{/auction/view}" style="color: white;">View Public Auction</a></p>
         </div>
 
-        <!-- Success/Error Messages -->
         <div th:if="${success}" class="alert alert-success">
             <span th:text="${success}"></span>
         </div>
@@ -176,7 +175,6 @@
             <span th:text="${error}"></span>
         </div>
 
-        <!-- Auction Stats -->
         <div class="section">
             <div class="stats-bar">
                 <div class="stat">
@@ -198,7 +196,6 @@
             </div>
         </div>
 
-        <!-- Released Players Queue (Commissioner Only) -->
         <div class="section" th:if="${!#lists.isEmpty(releasedPlayersQueue)}" style="background-color: #fff3cd; border: 2px solid #ffc107;">
             <h3 style="color: #856404;">🔔 Released Players Queue</h3>
             <p style="color: #856404; margin-bottom: 20px;">
@@ -256,7 +253,6 @@
             </div>
         </div>
 
-        <!-- Add Player to Auction -->
         <div class="section">
             <h3>Add Player to Auction</h3>
             <form th:action="@{/auction/add-player}" method="post" class="add-player-form">
@@ -292,7 +288,6 @@
             </div>
         </div>
 
-        <!-- Active Auction Items -->
         <div class="section">
             <h3>Current Auction Items</h3>
             <div th:if="${#lists.isEmpty(activeItems)}" style="text-align: center; color: #6c757d; font-style: italic; padding: 40px;">
@@ -381,7 +376,7 @@
                 </li>
                 <li><strong>Bidding:</strong> Each bid resets the timer - auction must stand 24 hours (in-season) or 72 hours (off-season) after the LAST bid</li>
                 <li><strong>Contract Posting:</strong> Winners have 48 hours to post a contract or pay buyout fee (half of winning bid)</li>
-                <li><strong>Salary Cap:</strong> Bids cannot exceed the $100M salary cap</li>
+                <li><strong>Salary Cap:</strong> Bids cannot exceed the $125M salary cap</li>
                 <li><strong>Roster Limits:</strong> 40 MLB players max, 25 minor league players max</li>
                 <li><strong>No Bid Deletion:</strong> Once you bid or nominate a player, you cannot delete that bid</li>
                 <li><strong>Contract Terms:</strong> 1-5 years (players under $0.75M limited to 2 years max)</li>

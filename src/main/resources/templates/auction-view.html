@@ -240,7 +240,6 @@
             return true;
         }
         
-        // Auto-refresh the page every 30 seconds to update auction status
         setTimeout(function() {
             location.reload();
         }, 30000);
@@ -274,7 +273,6 @@
             </p>
         </div>
 
-        <!-- Success/Error Messages -->
         <div th:if="${success}" class="alert alert-success">
             <span th:text="${success}"></span>
         </div>
@@ -282,13 +280,11 @@
             <span th:text="${error}"></span>
         </div>
 
-        <!-- Login Required Message -->
         <div th:if="${currentUser == null}" class="section" style="text-align: center; background-color: #fff3cd; border: 1px solid #ffeaa7;">
             <h3>Login Required</h3>
             <p>You must be logged in to place bids. <a th:href="@{/login}">Login here</a></p>
         </div>
 
-        <!-- Auction Stats -->
         <div class="section">
             <div class="stats-bar">
                 <div class="stat">
@@ -360,7 +356,6 @@
                         </div>
                     </div>
                     
-                    <!-- Time Information -->
                     <div class="time-info">
                         <div th:if="${item.firstBidTime != null}">
                             <div class="time-remaining" 
@@ -381,8 +376,7 @@
                         </div>
                     </div>
                     
-                    <!-- User's Bid Status -->
-                    <div th:if="${currentUser != null and userBids != null and userBids.get(item.id) != null and !userBids.get(item.id).isEmpty()}" 
+                    <div th:if="${currentUser != null and userBids != null and userBids.get(item.id) != null and !userBids.get(item.id).isEmpty()}"
                          class="bid-history">
                         <h5>Your Bid History</h5>
                         <div class="bid-list">
@@ -398,7 +392,6 @@
             </div>
         </div>
         
-        <!-- How It Works -->
         <div class="section" style="background-color: #f8f9fa;">
             <h3>How the Auction Works</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
@@ -431,7 +424,7 @@
                 </div>
             </div>
         </div>
-        </div> <!-- End normal auction view -->
+        </div>
     </div>
 </body>
 </html>

@@ -23,7 +23,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Create a test user if it doesn't exist
         if (!userAccountRepository.existsByUsername("testuser")) {
             UserAccount testUser = new UserAccount();
             testUser.setUsername("testuser");
@@ -31,7 +30,6 @@ public class DataInitializer implements CommandLineRunner {
             testUser.setRole("MEMBER");
             userAccountRepository.save(testUser);
             
-            // Add some sample baseball players for the test user
             Player[] samplePlayers = {
                 new Player("Mookie Betts", "OF", "LAD", 4, 36500000.0, testUser.getId()),
                 new Player("Ronald Acuña Jr.", "OF", "ATL", 5, 20000000.0, testUser.getId()),
@@ -53,7 +51,6 @@ public class DataInitializer implements CommandLineRunner {
                 playerRepository.save(player);
             }
             
-            // Add some free agents (players without contracts) for auction testing
             Player[] freeAgents = {
                 new Player("Mike Trout", "OF", "Los Angeles Angels", 0, 0.0, null),
                 new Player("Aaron Judge", "OF", "New York Yankees", 0, 0.0, null),
@@ -71,48 +68,40 @@ public class DataInitializer implements CommandLineRunner {
                 playerRepository.save(freeAgent);
             }
         }
-        
-        // Create test commissioner accounts
         createTestCommissioners();
-        
-        // Create additional test users
         createAdditionalTestUsers();
     }
     
     private void createTestCommissioners() {
-        // Primary test commissioner
         if (!userAccountRepository.existsByUsername("commissioner")) {
             UserAccount commissioner = new UserAccount();
             commissioner.setUsername("commissioner");
             commissioner.setPassword(passwordEncoder.encode("admin123"));
             commissioner.setRole("COMMISSIONER");
-            commissioner.setSalaryCap(100.0);
+            commissioner.setSalaryCap(125.0);
             commissioner.setCurrentSalaryUsed(0.0);
             commissioner.setMajorLeagueRosterCount(0);
             commissioner.setMinorLeagueRosterCount(0);
             userAccountRepository.save(commissioner);
         }
         
-        // Additional commissioner for testing
         if (!userAccountRepository.existsByUsername("admin")) {
             UserAccount admin = new UserAccount();
             admin.setUsername("admin");
             admin.setPassword(passwordEncoder.encode("password"));
             admin.setRole("COMMISSIONER");
-            admin.setSalaryCap(100.0);
+            admin.setSalaryCap(125.0);
             admin.setCurrentSalaryUsed(0.0);
             admin.setMajorLeagueRosterCount(0);
             admin.setMinorLeagueRosterCount(0);
             userAccountRepository.save(admin);
         }
-        
-        // Easy-to-remember commissioner account
         if (!userAccountRepository.existsByUsername("commish")) {
             UserAccount commish = new UserAccount();
             commish.setUsername("commish");
             commish.setPassword(passwordEncoder.encode("commish"));
             commish.setRole("COMMISSIONER");
-            commish.setSalaryCap(100.0);
+            commish.setSalaryCap(125.0);
             commish.setCurrentSalaryUsed(0.0);
             commish.setMajorLeagueRosterCount(0);
             commish.setMinorLeagueRosterCount(0);
@@ -121,7 +110,6 @@ public class DataInitializer implements CommandLineRunner {
     }
     
     private void createAdditionalTestUsers() {
-        // Create additional test managers
         String[] testManagers = {"manager1", "manager2", "team1", "team2", "owner1"};
         
         for (String username : testManagers) {
@@ -130,7 +118,7 @@ public class DataInitializer implements CommandLineRunner {
                 user.setUsername(username);
                 user.setPassword(passwordEncoder.encode("password"));
                 user.setRole("MANAGER");
-                user.setSalaryCap(100.0);
+                user.setSalaryCap(125.0);
                 user.setCurrentSalaryUsed(0.0);
                 user.setMajorLeagueRosterCount(0);
                 user.setMinorLeagueRosterCount(0);

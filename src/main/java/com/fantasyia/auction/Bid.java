@@ -14,7 +14,7 @@ public class Bid {
     private Long auctionItemId;
 
     @Column(nullable = false)
-    private Long bidderId; // User who placed the bid
+    private Long bidderId;
 
     @Column(nullable = false)
     private Double amount;
@@ -23,9 +23,8 @@ public class Bid {
     private LocalDateTime bidTime;
 
     @Column(nullable = false)
-    private String status = "ACTIVE"; // ACTIVE, OUTBID, WINNING
+    private String status = "ACTIVE";
 
-    // Constructors
     public Bid() {}
 
     public Bid(Long auctionItemId, Long bidderId, Double amount) {
@@ -35,7 +34,6 @@ public class Bid {
         this.bidTime = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

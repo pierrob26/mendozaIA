@@ -18,19 +18,19 @@ public class UserAccount {
     private String password;
 
     @Column(nullable = false)
-    private String role; // Role to be selected during registration
+    private String role;
 
     @Column
-    private Double salaryCap; // $100M salary cap
+    private Double salaryCap;
 
     @Column
-    private Double currentSalaryUsed; // Current salary committed
+    private Double currentSalaryUsed;
 
     @Column
-    private Integer majorLeagueRosterCount; // Count of players on 40-man roster (max 40)
+    private Integer majorLeagueRosterCount;
 
     @Column
-    private Integer minorLeagueRosterCount; // Count of minor league players (max 25)
+    private Integer minorLeagueRosterCount;
 
     // Basic getters and setters
     public Long getId() { return id; }
@@ -46,7 +46,7 @@ public class UserAccount {
     public void setRole(String role) { this.role = role; }
 
     public Double getSalaryCap() { 
-        return salaryCap != null ? salaryCap : 100.0; 
+        return salaryCap != null ? salaryCap : 125.0;
     }
     public void setSalaryCap(Double salaryCap) { this.salaryCap = salaryCap; }
 

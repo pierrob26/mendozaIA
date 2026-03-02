@@ -18,51 +18,50 @@ public class AuctionItem {
     private Long auctionId;
 
     @Column(nullable = false)
-    private Double startingBid = 0.5; // $500K for MLB, $100K for prospects
+    private Double startingBid = 0.5;
 
     @Column
     private Double currentBid;
 
     @Column
-    private Long currentBidderId; // User who placed the highest bid
+    private Long currentBidderId;
 
     @Column
-    private Long nominatedByUserId; // User who nominated player (cannot delete)
+    private Long nominatedByUserId;
 
     @Column(nullable = false)
     private LocalDateTime addedTime;
 
     @Column
-    private LocalDateTime firstBidTime; // When the first bid was placed
+    private LocalDateTime firstBidTime;
 
     @Column
-    private LocalDateTime lastBidTime; // When the most recent bid was placed
+    private LocalDateTime lastBidTime;
 
     @Column(nullable = false)
-    private String status = "ACTIVE"; // ACTIVE, SOLD, REMOVED, AWAITING_CONTRACT
+    private String status = "ACTIVE";
 
     @Column
-    private LocalDateTime endTime; // Time when bidding closes
+    private LocalDateTime endTime;
 
     @Column
-    private Boolean isMinorLeaguer; // Track if this is a minor league prospect
+    private Boolean isMinorLeaguer;
 
     @Column
-    private LocalDateTime contractDeadline; // 48 hours after winning to post contract
+    private LocalDateTime contractDeadline;
 
     @Column
-    private Boolean canDeleteBid; // Rule 6: Once bid/nominated, cannot delete
+    private Boolean canDeleteBid;
 
     @Column
-    private LocalDateTime rosterComplianceDeadline; // 24 hours (in-season) or 48 hours (off-season) to fix roster
+    private LocalDateTime rosterComplianceDeadline;
 
     @Column
-    private Boolean isBuyoutDeadlinePassed; // Track if after buyout deadline (affects contract length)
+    private Boolean isBuyoutDeadlinePassed;
 
     @Column
-    private Double currentMinimumIncrement; // Track locked-in minimum increment (Rule 5)
+    private Double currentMinimumIncrement;
 
-    // Constructors
     public AuctionItem() {}
 
     public AuctionItem(Long playerId, Long auctionId, Double startingBid) {
@@ -70,7 +69,7 @@ public class AuctionItem {
         this.auctionId = auctionId;
         this.startingBid = startingBid;
         this.addedTime = LocalDateTime.now();
-        this.canDeleteBid = true; // Can delete until first bid
+        this.canDeleteBid = true;
         this.currentMinimumIncrement = 0.0;
     }
 
@@ -81,11 +80,10 @@ public class AuctionItem {
         this.addedTime = LocalDateTime.now();
         this.isMinorLeaguer = isMinorLeaguer;
         this.nominatedByUserId = nominatedByUserId;
-        this.canDeleteBid = false; // Nomination = cannot delete (Rule 6)
+        this.canDeleteBid = false;
         this.currentMinimumIncrement = 0.0;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -154,58 +152,76 @@ public class AuctionItem {
         this.currentMinimumIncrement = currentMinimumIncrement; 
     }
 
-    // Helper methods to calculate minimum bid increment - $500K for all players
     public Double getMinimumBidIncrement(String auctionType) {
         if (lastBidTime == null) {
-            return 0.0; // No increment needed if no bids yet
+            return 0.0;
         }
 
-        // All players now use $500K increment
-        return 0.5; // $500K for all players
+
+        return 0.5;
     }
 
     public void updateMinimumIncrement(String auctionType) {
-        // With fixed $500K increments, set consistent increment
         double newIncrement = getMinimumBidIncrement(auctionType);
         this.currentMinimumIncrement = newIncrement;
     }
 
     public Double getMinimumNextBid(String auctionType) {
         if (currentBid == null) {
-            // Set starting bid based on player type
             if (getIsMinorLeaguer()) {
-                return 0.1; // $100K for minor leaguers
+                return 0.1;
             } else {
-                return 0.5; // $500K for MLB players
+                return 0.5;
             }
         }
         return currentBid + getMinimumBidIncrement(auctionType);
     }
 
     public boolean hasMinimumTimeElapsed(String auctionType) {
+        // TEMPORARY: Allow removal anytime for testing
+        return true;
+        
+        // Original logic (commented out for testing):
+        /*
         if (firstBidTime == null) return false;
         
         long hoursElapsed = Duration.between(firstBidTime, LocalDateTime.now()).toHours();
         
         if ("IN_SEASON".equals(auctionType)) {
-            return hoursElapsed >= 24; // 24 hours for in-season
+            return hoursElapsed >= 24;
         } else {
-            return hoursElapsed >= 72; // 72 hours for off-season
+            return hoursElapsed >= 72;
         }
+        */
     }
 
     public boolean canBeRemoved(String auctionType) {
-        return firstBidTime != null && hasMinimumTimeElapsed(auctionType);
+        // TEMPORARY: Allow removal anytime for testing
+        return true;
+        
+        // Original logic (commented out for testing):
+        // return firstBidTime != null && hasMinimumTimeElapsed(auctionType);
+    }
+
+    // TEMPORARY: Parameterless version for template compatibility
+    public boolean canBeRemoved() {
+        return true;
     }
 
     public long getTimeRemainingHours(String auctionType) {
-        if (firstBidTime == null) return -1; // No bids yet
+        // TEMPORARY: Always show 0 hours remaining for testing
+        return 0;
+        
+        // Original logic (commented out for testing):
+        /*
+        if (firstBidTime == null) return -1;
         
         int requiredHours = "IN_SEASON".equals(auctionType) ? 24 : 72;
         LocalDateTime calculatedEndTime = firstBidTime.plusHours(requiredHours);
         
         if (LocalDateTime.now().isAfter(calculatedEndTime)) return 0;
         return Duration.between(LocalDateTime.now(), calculatedEndTime).toHours();
+        */
     }
 
     public boolean isContractDeadlinePassed() {

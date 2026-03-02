@@ -26,21 +26,20 @@ public class PendingContract {
     private LocalDateTime wonTime;
 
     @Column(nullable = false)
-    private LocalDateTime contractDeadline; // 48 hours after won
+    private LocalDateTime contractDeadline;
 
     @Column
-    private Integer contractYears; // 1-5 years
+    private Integer contractYears;
 
     @Column
-    private String status = "PENDING"; // PENDING, POSTED, EXPIRED
+    private String status = "PENDING";
 
     @Column
-    private Double buyoutFee; // Half of winning bid if contract not posted
+    private Double buyoutFee;
 
     @Column
     private Boolean isMinorLeaguer;
 
-    // Constructors
     public PendingContract() {}
 
     public PendingContract(Long auctionItemId, Long playerId, Long winnerId, Double winningBid, Boolean isMinorLeaguer) {
@@ -54,7 +53,6 @@ public class PendingContract {
         this.isMinorLeaguer = isMinorLeaguer;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -90,7 +88,6 @@ public class PendingContract {
     }
     public void setIsMinorLeaguer(Boolean isMinorLeaguer) { this.isMinorLeaguer = isMinorLeaguer; }
 
-    // Helper methods
     public boolean isDeadlinePassed() {
         return LocalDateTime.now().isAfter(contractDeadline);
     }
@@ -98,12 +95,10 @@ public class PendingContract {
     public boolean isValidContractLength() {
         if (contractYears == null) return false;
         
-        // Players under $750K can only get max 2 years
         if (winningBid < 0.75 && contractYears > 2) {
             return false;
         }
         
-        // All contracts: 1-5 years
         return contractYears >= 1 && contractYears <= 5;
     }
 }

@@ -24,7 +24,7 @@ CORE ENTITIES & DATA MODEL
 
 1. USER MANAGEMENT
    - UserAccount: Stores user credentials, roles (MEMBER/COMMISSIONER), and salary cap info
-     * Each user has $100M salary cap
+     * Each user has $125M salary cap
      * Tracks current salary usage and available cap space
      * Manages roster counts (40 major league max, 25 minor league max)
      * Built-in methods to check affordability and roster space
@@ -63,7 +63,7 @@ BUSINESS LOGIC & RULES ENGINE
 -----------------------------
 
 1. SALARY CAP SYSTEM
-   - Hard $100M cap per team
+   - Hard $125M cap per team
    - Bid validation prevents cap violations
    - Real-time cap space calculation
    - AAS (Average Annual Salary) determines cap hit

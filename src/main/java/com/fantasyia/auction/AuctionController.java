@@ -611,7 +611,6 @@ public class AuctionController {
 
     @PostMapping("/toggle-auction-type")
     public String toggleAuctionType(RedirectAttributes redirectAttributes) {
-        // Check commissioner permissions
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         UserAccount user = userAccountRepository.findByUsername(username).orElse(null);

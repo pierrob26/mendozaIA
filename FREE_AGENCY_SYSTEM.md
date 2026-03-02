@@ -92,7 +92,7 @@ This system implements a comprehensive Free Agency auction following official le
 
 ### 12. Salary Cap Enforcement (Rule b(xi))
 ✅ **Implemented**:
-- $100M salary cap per team
+- $125M salary cap per team
 - Bids exceeding available cap space are rejected
 - No backloaded contracts to circumvent cap
 - Validated in `AuctionService.validateBid()`
@@ -158,7 +158,7 @@ Enhanced with:
 
 #### `UserAccount`
 Enhanced with:
-- `salaryCap`: $100M default
+- `salaryCap`: $125M default
 - `currentSalaryUsed`: Track committed salary
 - `majorLeagueRosterCount`: Track 40-man roster
 - `minorLeagueRosterCount`: Track minor league roster
@@ -240,7 +240,7 @@ In `AuctionScheduledTasks.java`:
 
 ### League Settings
 In database or configuration:
-- Salary cap: $100M (stored in `UserAccount`)
+- Salary cap: $125M (stored in `UserAccount`)
 - Major league roster limit: 40
 - Minor league roster limit: 25
 - Contract posting deadline: 48 hours
