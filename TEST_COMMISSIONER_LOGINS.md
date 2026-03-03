@@ -12,6 +12,12 @@ I have created several test commissioner accounts for you to use:
 
 ### Alternative Commissioner Accounts
 
+#### dasGoat Account (Your Requested Account)
+- **Username:** `dasGoat`
+- **Password:** `goat123`
+- **Role:** COMMISSIONER
+- **Status:** Your personal commissioner account
+
 #### Easy Login
 - **Username:** `commish`
 - **Password:** `commish`

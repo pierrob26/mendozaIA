@@ -32,9 +32,8 @@ public class ReleasedPlayer {
     private LocalDateTime releasedAt;
 
     @Column(nullable = false)
-    private String status; // "PENDING", "ADDED_TO_AUCTION", "REJECTED"
+    private String status;
 
-    // Constructors
     public ReleasedPlayer() {
         this.releasedAt = LocalDateTime.now();
         this.status = "PENDING";

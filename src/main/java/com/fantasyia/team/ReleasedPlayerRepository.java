@@ -8,9 +8,7 @@ import java.util.List;
 @Repository
 public interface ReleasedPlayerRepository extends JpaRepository<ReleasedPlayer, Long> {
     
-    // Find all pending released players (not yet added to auction)
     List<ReleasedPlayer> findByStatusOrderByReleasedAtDesc(String status);
     
-    // Count pending released players
     long countByStatus(String status);
 }

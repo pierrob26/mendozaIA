@@ -37,32 +37,20 @@ public class AuctionService {
     @Autowired
     private PendingContractRepository pendingContractRepository;
 
-    /**
-     * Calculate the current minimum bid increment.
-     * 
-     * Updated Rules:
-     * - All players: $500K minimum increase
-     */
     public double calculateMinimumBidIncrement(AuctionItem item, String auctionType) {
         if (item.getLastBidTime() == null) {
-            return 0.0; // No increment for first bid
+            return 0.0;
         }
 
-        // All players now use $500K increment
-        return 0.5;  // $500K for all players
+        return 0.5;
     }
 
-    /**
-     * Get the minimum next bid for an auction item.
-     * MLB players start at $500K minimum, minor leaguers at $100K
-     */
     public double getMinimumNextBid(AuctionItem item, String auctionType) {
         if (item.getCurrentBid() == null) {
-            // Set minimum starting bid based on player type
             if (item.getIsMinorLeaguer()) {
-                return 0.1; // $100K for minor leaguers
+                return 0.1;
             } else {
-                return 0.5; // $500K for MLB players
+                return 0.5;
             }
         }
         return item.getCurrentBid() + calculateMinimumBidIncrement(item, auctionType);
@@ -119,7 +107,6 @@ public class AuctionService {
 
     @Transactional
     public BidResult placeBid(Long auctionItemId, Long bidderId, Double bidAmount) {
-        // Validate bid
         BidValidationResult validation = validateBid(auctionItemId, bidderId, bidAmount);
         if (!validation.isValid()) {
             return new BidResult(false, validation.getMessage(), null);
@@ -132,12 +119,10 @@ public class AuctionService {
         Bid bid = new Bid(auctionItemId, bidderId, bidAmount);
         bidRepository.save(bid);
 
-        // Update auction item
         LocalDateTime now = LocalDateTime.now();
         
         if (item.getFirstBidTime() == null) {
             item.setFirstBidTime(now);
-            // Rule 6: Once bid is placed, cannot delete
             item.setCanDeleteBid(false);
         }
 
@@ -168,11 +153,6 @@ public class AuctionService {
     }
 
     public boolean isReadyToWin(AuctionItem item, String auctionType) {
-        // TEMPORARY: Always allow winning for testing
-        return true;
-        
-        // Original logic (commented out for testing):
-        /*
         if (item.getLastBidTime() == null) {
             return false;
         }
@@ -181,7 +161,6 @@ public class AuctionService {
         int requiredHours = "IN_SEASON".equals(auctionType) ? 24 : 72;
         
         return hoursElapsed >= requiredHours;
-        */
     }
 
     @Transactional
@@ -216,35 +195,6 @@ public class AuctionService {
             return new ContractResult(false, "Winner not found");
         }
 
-        // TEMPORARY: Auto-assign player directly to winner for testing
-        // Skip the pending contract process and assign immediately
-        
-        player.setOwnerId(winner.getId());
-        player.setContractLength(3); // Default 3-year contract for testing
-        player.setContractAmount(item.getCurrentBid() * 3);
-        player.setAverageAnnualSalary(item.getCurrentBid());
-        player.setContractYear(1);
-        playerRepository.save(player);
-
-        // Update winner's salary and roster counts
-        winner.setCurrentSalaryUsed(winner.getCurrentSalaryUsed() + item.getCurrentBid());
-        if (item.getIsMinorLeaguer()) {
-            winner.setMinorLeagueRosterCount(winner.getMinorLeagueRosterCount() + 1);
-        } else {
-            winner.setMajorLeagueRosterCount(winner.getMajorLeagueRosterCount() + 1);
-        }
-        userAccountRepository.save(winner);
-
-        // Mark auction item as sold
-        item.setStatus("SOLD");
-        auctionItemRepository.save(item);
-
-        String message = String.format("Player %s AUTOMATICALLY ASSIGNED to %s for $%.1fM AAS (3-year contract). Testing mode - no manual contract posting required.",
-            player.getName(), winner.getUsername(), item.getCurrentBid());
-        return new ContractResult(true, message);
-        
-        // ORIGINAL CODE (commented out for testing):
-        /*
         PendingContract pendingContract = new PendingContract(
             item.getId(),
             player.getId(),
@@ -265,15 +215,9 @@ public class AuctionService {
         String message = String.format("Player %s awarded to %s for $%.1fM AAS. Contract must be posted within 48 hours or buyout fee of $%.1fM will apply.",
             player.getName(), winner.getUsername(), item.getCurrentBid(), item.getCurrentBid() / 2.0);
         return new ContractResult(true, message);
-        */
     }
 
     public long calculateHoursRemaining(AuctionItem item, String auctionType) {
-        // TEMPORARY: Always return 0 hours remaining for testing
-        return 0;
-        
-        // Original logic (commented out for testing):
-        /*
         if (item.getLastBidTime() == null) {
             return -1;
         }
@@ -286,7 +230,6 @@ public class AuctionService {
         }
         
         return Duration.between(LocalDateTime.now(), calculatedEndTime).toHours();
-        */
     }
 
     public ContractValidationResult validateContractLength(PendingContract contract, Integer years, Auction auction) {

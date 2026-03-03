@@ -53,6 +53,11 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
     </style>
     <script>
         function validateFile() {
@@ -432,6 +437,9 @@
             </div>
             <div th:if="${error}" class="alert alert-error" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
                 <span th:text="${error}"></span>
+            </div>
+            <div th:if="${warning}" class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                <span th:text="${warning}"></span>
             </div>
             
             <form th:action="@{/team/bulk-import}" method="post" enctype="multipart/form-data" onsubmit="return validateFile()">

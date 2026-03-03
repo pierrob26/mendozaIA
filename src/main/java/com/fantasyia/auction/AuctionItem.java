@@ -178,11 +178,6 @@ public class AuctionItem {
     }
 
     public boolean hasMinimumTimeElapsed(String auctionType) {
-        // TEMPORARY: Allow removal anytime for testing
-        return true;
-        
-        // Original logic (commented out for testing):
-        /*
         if (firstBidTime == null) return false;
         
         long hoursElapsed = Duration.between(firstBidTime, LocalDateTime.now()).toHours();
@@ -192,28 +187,17 @@ public class AuctionItem {
         } else {
             return hoursElapsed >= 72;
         }
-        */
     }
 
     public boolean canBeRemoved(String auctionType) {
-        // TEMPORARY: Allow removal anytime for testing
-        return true;
-        
-        // Original logic (commented out for testing):
-        // return firstBidTime != null && hasMinimumTimeElapsed(auctionType);
+        return firstBidTime != null && hasMinimumTimeElapsed(auctionType);
     }
 
-    // TEMPORARY: Parameterless version for template compatibility
     public boolean canBeRemoved() {
-        return true;
+        return canBeRemoved("IN_SEASON");
     }
 
     public long getTimeRemainingHours(String auctionType) {
-        // TEMPORARY: Always show 0 hours remaining for testing
-        return 0;
-        
-        // Original logic (commented out for testing):
-        /*
         if (firstBidTime == null) return -1;
         
         int requiredHours = "IN_SEASON".equals(auctionType) ? 24 : 72;
@@ -221,7 +205,6 @@ public class AuctionItem {
         
         if (LocalDateTime.now().isAfter(calculatedEndTime)) return 0;
         return Duration.between(LocalDateTime.now(), calculatedEndTime).toHours();
-        */
     }
 
     public boolean isContractDeadlinePassed() {

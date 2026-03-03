@@ -28,6 +28,10 @@ public class DataInitializer implements CommandLineRunner {
             testUser.setUsername("testuser");
             testUser.setPassword(passwordEncoder.encode("password"));
             testUser.setRole("MEMBER");
+            testUser.setSalaryCap(125.0);
+            testUser.setCurrentSalaryUsed(0.0);
+            testUser.setMajorLeagueRosterCount(0);
+            testUser.setMinorLeagueRosterCount(0);
             userAccountRepository.save(testUser);
             
             Player[] samplePlayers = {
@@ -106,6 +110,18 @@ public class DataInitializer implements CommandLineRunner {
             commish.setMajorLeagueRosterCount(0);
             commish.setMinorLeagueRosterCount(0);
             userAccountRepository.save(commish);
+        }
+        
+        if (!userAccountRepository.existsByUsername("dasGoat")) {
+            UserAccount dasGoat = new UserAccount();
+            dasGoat.setUsername("dasGoat");
+            dasGoat.setPassword(passwordEncoder.encode("goat123"));
+            dasGoat.setRole("COMMISSIONER");
+            dasGoat.setSalaryCap(125.0);
+            dasGoat.setCurrentSalaryUsed(0.0);
+            dasGoat.setMajorLeagueRosterCount(0);
+            dasGoat.setMinorLeagueRosterCount(0);
+            userAccountRepository.save(dasGoat);
         }
     }
     

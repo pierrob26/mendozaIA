@@ -42,4 +42,19 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     @Transactional
     @Query("UPDATE Player p SET p.contractLength = 0, p.contractAmount = 0.0, p.ownerId = null WHERE p.id IN :playerIds")
     void releasePlayersToFreeAgency(@Param("playerIds") List<Long> playerIds);
+    
+    // Check if a player with the same name already exists on any team (excluding empty slots and free agents)
+    @Query("SELECT p FROM Player p WHERE LOWER(p.name) = LOWER(:name) " +
+           "AND p.ownerId IS NOT NULL " +
+           "AND NOT p.name LIKE 'Empty%Slot%' " +
+           "AND p.team != 'Free Agent'")
+    List<Player> findByNameIgnoreCaseExcludingEmptySlots(@Param("name") String name);
+    
+    // Check if a player with the same name already exists on a different team than the specified owner
+    @Query("SELECT p FROM Player p WHERE LOWER(p.name) = LOWER(:name) " +
+           "AND p.ownerId IS NOT NULL " +
+           "AND p.ownerId != :ownerId " +
+           "AND NOT p.name LIKE 'Empty%Slot%' " +
+           "AND p.team != 'Free Agent'")
+    List<Player> findByNameIgnoreCaseOnDifferentTeam(@Param("name") String name, @Param("ownerId") Long ownerId);
 }

@@ -31,18 +31,16 @@ public class HomeController {
             UserAccount user = userAccountRepository.findByUsername(username).orElse(null);
             model.addAttribute("currentUser", user);
 
-            if (user != null && "COMMISSIONER".equals(user.getRole())) {
-                long pendingCount = releasedPlayerRepository.countByStatus("PENDING");
-                model.addAttribute("pendingReleasedPlayersCount", pendingCount);
+            if (user != null) {
+                // Show salary information for all authenticated users
+                List<UserAccount> currentUserTeam = Arrays.asList(user);
+                model.addAttribute("teams", currentUserTeam);
                 
-                // Commissioners see only their own salary information on home page
-                // (they can see all teams via the manage auction page if needed)
-                List<UserAccount> currentUserTeam = Arrays.asList(user);
-                model.addAttribute("teams", currentUserTeam);
-            } else if (user != null && "MANAGER".equals(user.getRole())) {
-                // Regular managers only see their own salary information
-                List<UserAccount> currentUserTeam = Arrays.asList(user);
-                model.addAttribute("teams", currentUserTeam);
+                // Commissioner-specific features
+                if ("COMMISSIONER".equals(user.getRole())) {
+                    long pendingCount = releasedPlayerRepository.countByStatus("PENDING");
+                    model.addAttribute("pendingReleasedPlayersCount", pendingCount);
+                }
             }
         }
         
