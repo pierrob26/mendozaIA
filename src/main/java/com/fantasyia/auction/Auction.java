@@ -13,40 +13,82 @@ public class Auction {
     @Column(name = "auction_name", nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private LocalDateTime startTime;
+    @Column(name = "auction_type")
+    private String auctionType = "IN_SEASON";
 
-    @Column(nullable = false)
-    private LocalDateTime endTime;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "commissioner_id", nullable = false)
-    private Long createdByCommissionerId;
+    @Column(name = "created_by")
+    private Long createdBy;
 
-    @Column(name = "auction_status", nullable = false)
-    private String status = "ACTIVE"; // ACTIVE, COMPLETED, CANCELLED
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 
     @Column
-    private String auctionType; // IN_SEASON, OFF_SEASON
+    private LocalDateTime startTime;
+
+    @Column
+    private LocalDateTime endTime;
+
+    @Column(name = "auction_status")
+    private String status = "ACTIVE";
 
     @Column
     private String description;
 
-    // Constructors
-    public Auction() {}
+    public Auction() {
+        this.createdAt = LocalDateTime.now();
+        this.isActive = true;
+    }
 
-    public Auction(String name, LocalDateTime startTime, LocalDateTime endTime, Long createdByCommissionerId, String description) {
+    public Auction(String name, String auctionType, Long createdBy) {
+        this.name = name;
+        this.auctionType = auctionType != null ? auctionType : "IN_SEASON";
+        this.createdBy = createdBy;
+        this.createdAt = LocalDateTime.now();
+        this.isActive = true;
+        this.status = "ACTIVE";
+    }
+
+    public Auction(String name, LocalDateTime startTime, LocalDateTime endTime, Long createdBy, String description) {
         this.name = name;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.createdByCommissionerId = createdByCommissionerId;
+        this.createdBy = createdBy;
         this.description = description;
+        this.createdAt = LocalDateTime.now();
+        this.isActive = true;
+        this.status = "ACTIVE";
+        this.auctionType = "IN_SEASON";
     }
 
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public String getAuctionType() { return auctionType; }
+    public void setAuctionType(String auctionType) { this.auctionType = auctionType; }
+
+    // Legacy compatibility methods
+    public String getType() { return auctionType; }
+    public void setType(String type) { this.auctionType = type; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Long getCreatedBy() { return createdBy; }
+    public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
+
+    // Legacy compatibility methods
+    public Long getCreatedByCommissionerId() { return createdBy; }
+    public void setCreatedByCommissionerId(Long createdBy) { this.createdBy = createdBy; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
@@ -54,16 +96,8 @@ public class Auction {
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 
-    public Long getCreatedByCommissionerId() { return createdByCommissionerId; }
-    public void setCreatedByCommissionerId(Long createdByCommissionerId) { this.createdByCommissionerId = createdByCommissionerId; }
-
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
-    public String getAuctionType() { 
-        return auctionType != null ? auctionType : "IN_SEASON"; 
-    }
-    public void setAuctionType(String auctionType) { this.auctionType = auctionType; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

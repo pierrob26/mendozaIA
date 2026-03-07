@@ -10,7 +10,12 @@ import java.util.List;
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
     
-    List<Auction> findByCreatedByCommissionerId(Long commissionerId);
+    List<Auction> findByCreatedBy(Long createdBy);
+    
+    // Legacy compatibility method
+    default List<Auction> findByCreatedByCommissionerId(Long commissionerId) {
+        return findByCreatedBy(commissionerId);
+    }
     
     List<Auction> findByStatus(String status);
     

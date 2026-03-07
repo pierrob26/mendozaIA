@@ -10,5 +10,5 @@ public interface ReleasedPlayerRepository extends JpaRepository<ReleasedPlayer, 
     
     List<ReleasedPlayer> findByStatusOrderByReleasedAtDesc(String status);
     
-    long countByStatus(String status);
+    Long countByStatus(String status);
 }

@@ -2,502 +2,328 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Team - FantasyIA</title>
+    <title>My Team</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" href="/css/style.css"/>
     <style>
-        .filter-row, .form-row {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 10px;
+        .team-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
         }
-        .filter-group, .form-group {
-            display: flex;
-            flex-direction: column;
+        .team-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
         }
-        .filter-group label, .form-group label {
-            font-weight: bold;
-            margin-bottom: 5px;
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
         }
-        .players-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        .player-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1rem;
+            transition: all 0.3s ease;
         }
-        .players-table th, .players-table td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
+        .player-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        .add-player-form, .bulk-import-form {
-            background-color: #f8f9fa;
-            padding: 20px;
+        .position-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 0.5rem 1rem;
             border-radius: 8px;
-            margin-top: 20px;
+            margin: 1rem 0;
+            text-align: center;
+            font-weight: bold;
         }
-        .bulk-import-form {
-            border: 2px dashed #007bff;
-        }
-        .alert {
+        .salary-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 1rem;
+            margin: 1rem 0;
             border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 15px;
         }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .alert-warning {
-            background-color: #fff3cd;
-            color: #856404;
+        .filter-section {
+            background: #fff3cd;
             border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-danger {
+            background: #dc3545;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .contract-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+        }
+        .empty-slot {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            text-align: center;
+            color: #6c757d;
+            padding: 2rem;
+            border-radius: 10px;
+        }
+        .roster-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .stat-card {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
         }
     </style>
-    <script>
-        function validateFile() {
-            const fileInput = document.getElementById('file');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert('Please select a file to upload.');
-                return false;
-            }
-            
-            // Check file size (10MB = 10 * 1024 * 1024 bytes)
-            if (file.size > 10 * 1024 * 1024) {
-                alert('File size is too large. Please use files under 10MB.');
-                return false;
-            }
-            
-            // Check file extension
-            const fileName = file.name.toLowerCase();
-            if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
-                alert('Invalid file format. Please use .xlsx or .xls files only.');
-                return false;
-            }
-            
-            // Show loading message
-            const submitButton = document.getElementById('import-button');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Importing...';
-            
-            return true;
-        }
-        
-        function updateFileName() {
-            const fileInput = document.getElementById('file');
-            const fileLabel = document.getElementById('file-label');
-            
-            if (fileInput.files.length > 0) {
-                fileLabel.textContent = fileInput.files[0].name;
-                fileLabel.style.color = '#007bff';
-            } else {
-                fileLabel.textContent = 'Select Excel File:';
-                fileLabel.style.color = '';
-            }
-        }
-        
-        function toggleAllPlayers(selectAllCheckbox) {
-            const checkboxes = document.querySelectorAll('.player-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAllCheckbox.checked;
-            });
-            updateReleaseButton();
-        }
-        
-        function updateReleaseButton() {
-            const checkedBoxes = document.querySelectorAll('.player-checkbox:checked');
-            const count = checkedBoxes.length;
-            const button = document.getElementById('releaseSelectedBtn');
-            const countSpan = document.getElementById('selectedCount');
-            
-            countSpan.textContent = count;
-            button.disabled = count === 0;
-            
-            if (count === 0) {
-                button.style.backgroundColor = '#6c757d';
-                button.style.cursor = 'not-allowed';
-            } else {
-                button.style.backgroundColor = '#007bff';
-                button.style.cursor = 'pointer';
-            }
-        }
-        
-        function selectAllOwnedPlayers() {
-            const checkboxes = document.querySelectorAll('.player-checkbox');
-            checkboxes.forEach(checkbox => checkbox.checked = true);
-            document.getElementById('selectAll').checked = true;
-            updateReleaseButton();
-        }
-        
-        function clearAllSelections() {
-            const checkboxes = document.querySelectorAll('.player-checkbox');
-            checkboxes.forEach(checkbox => checkbox.checked = false);
-            document.getElementById('selectAll').checked = false;
-            updateReleaseButton();
-        }
-        
-        function releaseSelectedPlayers() {
-            const checkedBoxes = document.querySelectorAll('.player-checkbox:checked');
-            const count = checkedBoxes.length;
-            
-            console.log('Release function called, checked boxes count:', count);
-            
-            if (count === 0) {
-                alert('Please select at least one player to release.');
-                return;
-            }
-            
-            const playerNames = Array.from(checkedBoxes).map(checkbox => {
-                const row = checkbox.closest('tr');
-                return row.cells[1].textContent; // Player name is in the 2nd column (index 1)
-            });
-            
-            console.log('Players to release:', playerNames);
-            
-            const message = `Are you sure you want to release ${count} player(s)?\n\nPlayers to be released:\n${playerNames.join('\n')}\n\nThey will be replaced with empty roster slots (e.g., "Empty C Slot", "Empty OF Slot").`;
-            
-            if (confirm(message)) {
-                console.log('User confirmed, submitting form...');
-                try {
-                    const form = document.getElementById('releasePlayersForm');
-                    if (form) {
-                        form.submit();
-                    } else {
-                        console.error('Form not found!');
-                        alert('Error: Form not found. Please refresh the page and try again.');
-                    }
-                } catch (error) {
-                    console.error('Error submitting form:', error);
-                    alert('Error submitting form: ' + error.message);
-                }
-            } else {
-                console.log('User cancelled release');
-            }
-        }
-        
-        // Initialize button state when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Page loaded, initializing release button...');
-            updateReleaseButton();
-        });
-    </script>
 </head>
-<body>
-    <div class="team-container">
-        <h1>My Fantasy Baseball Team</h1>
-        <p><a th:href="@{/}">← Back to Home</a></p>
+<body class="team-container">
+    <div class="team-card">
+        <h1 style="text-align: center; color: #333; margin-bottom: 2rem;">
+            <span style="color: #667eea;">⚾</span> My Team Management
+        </h1>
 
-        <!-- Filter Form -->
-        <div class="filter-form">
-            <h3>Filter Players</h3>
-            <form th:action="@{/team}" method="get">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="position">Position:</label>
-                        <select id="position" name="position">
-                            <option value="">All Positions</option>
-                            <option th:value="'C'" th:selected="${selectedPosition == 'C'}">Catcher (C)</option>
-                            <option th:value="'1B'" th:selected="${selectedPosition == '1B'}">First Base (1B)</option>
-                            <option th:value="'2B'" th:selected="${selectedPosition == '2B'}">Second Base (2B)</option>
-                            <option th:value="'3B'" th:selected="${selectedPosition == '3B'}">Third Base (3B)</option>
-                            <option th:value="'SS'" th:selected="${selectedPosition == 'SS'}">Shortstop (SS)</option>
-                            <option th:value="'OF'" th:selected="${selectedPosition == 'OF'}">Outfield (OF)</option>
-                            <option th:value="'DH'" th:selected="${selectedPosition == 'DH'}">Designated Hitter (DH)</option>
-                            <option th:value="'SP'" th:selected="${selectedPosition == 'SP'}">Starting Pitcher (SP)</option>
-                            <option th:value="'RP'" th:selected="${selectedPosition == 'RP'}">Relief Pitcher (RP)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="minContract">Min Contract Length:</label>
-                        <input type="number" id="minContract" name="minContract" th:value="${minContract}" placeholder="Years">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="maxContract">Max Contract Length:</label>
-                        <input type="number" id="maxContract" name="maxContract" th:value="${maxContract}" placeholder="Years">
-                    </div>
+        <!-- Error/Success Messages -->
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}" style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 5px; margin: 1rem 0;"></div>
+        <div th:if="${message}" class="alert alert-success" th:text="${message}" style="background: #d1f2d1; color: #155724; padding: 1rem; border-radius: 5px; margin: 1rem 0;"></div>
+
+        <!-- Navigation -->
+        <div style="text-align: center; margin: 2rem 0;">
+            <a th:href="@{/}" class="btn-primary" style="text-decoration: none; margin: 0 10px;">🏠 Home</a>
+            <a th:href="@{/auction/view}" class="btn-primary" style="text-decoration: none; margin: 0 10px;">🏆 Auction</a>
+        </div>
+
+        <!-- Team Statistics -->
+        <div class="salary-info">
+            <h3 style="margin-top: 0;">💰 Team Financial Overview</h3>
+            <div th:if="${currentUser != null}" class="roster-stats">
+                <div class="stat-card">
+                    <div style="font-size: 1.2em; font-weight: bold; color: #dc3545;" th:text="'$' + ${#numbers.formatDecimal(currentUser.currentSalaryUsed, 1, 1)} + 'M'">$0.0M</div>
+                    <div style="font-size: 0.9em; color: #6c757d;">Current Salary</div>
                 </div>
-                
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="minSalary">Min Salary:</label>
-                        <input type="number" step="0.01" id="minSalary" name="minSalary" th:value="${minSalary}" placeholder="$">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="maxSalary">Max Salary:</label>
-                        <input type="number" step="0.01" id="maxSalary" name="maxSalary" th:value="${maxSalary}" placeholder="$">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <button type="submit">Apply Filters</button>
-                        <a th:href="@{/team}" style="margin-top: 5px;">Clear Filters</a>
-                    </div>
+                <div class="stat-card">
+                    <div style="font-size: 1.2em; font-weight: bold; color: #28a745;" th:text="'$' + ${#numbers.formatDecimal(currentUser.availableCapSpace, 1, 1)} + 'M'">$125.0M</div>
+                    <div style="font-size: 0.9em; color: #6c757d;">Available Cap</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 1.2em; font-weight: bold; color: #007bff;" th:text="${currentUser.majorLeagueRosterCount}">0</div>
+                    <div style="font-size: 0.9em; color: #6c757d;">Major League (40 max)</div>
+                </div>
+                <div class="stat-card">
+                    <div style="font-size: 1.2em; font-weight: bold; color: #17a2b8;" th:text="${currentUser.minorLeagueRosterCount}">0</div>
+                    <div style="font-size: 0.9em; color: #6c757d;">Minor League (25 max)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Filtering -->
+        <div class="filter-section">
+            <h3 style="margin-top: 0;">🔍 Filter My Players</h3>
+            <form th:action="@{/team}" method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; align-items: end;">
+                <div>
+                    <label for="position">Position:</label>
+                    <select id="position" name="position" style="width: 100%; padding: 5px;">
+                        <option value="">All Positions</option>
+                        <option th:value="C" th:selected="${selectedPosition == 'C'}">Catcher</option>
+                        <option th:value="1B" th:selected="${selectedPosition == '1B'}">First Base</option>
+                        <option th:value="2B" th:selected="${selectedPosition == '2B'}">Second Base</option>
+                        <option th:value="3B" th:selected="${selectedPosition == '3B'}">Third Base</option>
+                        <option th:value="SS" th:selected="${selectedPosition == 'SS'}">Shortstop</option>
+                        <option th:value="OF" th:selected="${selectedPosition == 'OF'}">Outfield</option>
+                        <option th:value="DH" th:selected="${selectedPosition == 'DH'}">Designated Hitter</option>
+                        <option th:value="SP" th:selected="${selectedPosition == 'SP'}">Starting Pitcher</option>
+                        <option th:value="RP" th:selected="${selectedPosition == 'RP'}">Relief Pitcher</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="minContract">Min Contract:</label>
+                    <input type="number" id="minContract" name="minContract" th:value="${minContract}" style="width: 100%; padding: 5px;" />
+                </div>
+                <div>
+                    <label for="maxContract">Max Contract:</label>
+                    <input type="number" id="maxContract" name="maxContract" th:value="${maxContract}" style="width: 100%; padding: 5px;" />
+                </div>
+                <div>
+                    <label for="minSalary">Min Salary ($M):</label>
+                    <input type="number" id="minSalary" name="minSalary" step="0.1" th:value="${minSalary}" style="width: 100%; padding: 5px;" />
+                </div>
+                <div>
+                    <label for="maxSalary">Max Salary ($M):</label>
+                    <input type="number" id="maxSalary" name="maxSalary" step="0.1" th:value="${maxSalary}" style="width: 100%; padding: 5px;" />
+                </div>
+                <div>
+                    <button type="submit" class="btn-primary">Apply Filters</button>
                 </div>
             </form>
         </div>
 
-        <div class="admin-actions" style="margin-top: 20px; padding: 15px; background-color: #e6f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
-            <h3 style="margin-top: 0; color: #0056b3;">Release Players</h3>
-            <p style="font-size: 0.9em; color: #0056b3; margin-bottom: 15px;">
-                Select players from your roster to release them. They will be replaced with empty roster slots.
-            </p>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button type="button" id="releaseSelectedBtn" 
-                        onclick="releaseSelectedPlayers()"
-                        disabled
-                        style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                    📤 Release Selected Players (<span id="selectedCount">0</span>)
-                </button>
-                <button type="button" onclick="selectAllOwnedPlayers()" 
-                        style="background-color: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
-                    Select All
-                </button>
-                <button type="button" onclick="clearAllSelections()" 
-                        style="background-color: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
-                    Clear All
-                </button>
-            </div>
-            <div style="margin-top: 10px;">
-                <small style="color: #6c757d;">
-                    💡 Tip: Released players will be replaced with generic "Empty [Position] Slot" placeholders with no contract.
-                </small>
+        <!-- Players Display -->
+        <div class="player-grid">
+            <div th:each="player : ${players}" class="player-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0; color: #333;" th:text="${player.name}">Player Name</h4>
+                    <span style="background: #007bff; color: white; padding: 3px 8px; border-radius: 15px; font-size: 0.8em;" th:text="${player.position}">POS</span>
+                </div>
+                
+                <div class="contract-info">
+                    <span><strong>Team:</strong></span>
+                    <span th:text="${player.team}">Team</span>
+                </div>
+                
+                <div class="contract-info" th:if="${player.contractLength != null and player.contractLength > 0}">
+                    <span><strong>Contract:</strong></span>
+                    <span th:text="${player.contractLength} + ' years'">0 years</span>
+                </div>
+                
+                <div class="contract-info" th:if="${player.contractAmount != null and player.contractAmount > 0}">
+                    <span><strong>Total Value:</strong></span>
+                    <span th:text="'$' + ${#numbers.formatDecimal(player.contractAmount / 1000000, 1, 1)} + 'M'">$0.0M</span>
+                </div>
+                
+                <div class="contract-info" th:if="${player.averageAnnualSalary != null and player.averageAnnualSalary > 0}">
+                    <span><strong>AAV:</strong></span>
+                    <span th:text="'$' + ${#numbers.formatDecimal(player.averageAnnualSalary / 1000000, 1, 1)} + 'M'">$0.0M</span>
+                </div>
+                
+                <div style="margin-top: 1rem; text-align: center;">
+                    <form th:action="@{/team/release-player}" method="post" style="display: inline;" 
+                          onsubmit="return confirm('Are you sure you want to release this player?');">
+                        <input type="hidden" name="playerId" th:value="${player.id}" />
+                        <button type="submit" class="btn-danger">Release Player</button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <!-- Players Table -->
-        <form id="releasePlayersForm" th:action="@{/team/release-players}" method="post">
-            <table class="players-table">
+        <!-- Empty State -->
+        <div th:if="${players == null or #lists.isEmpty(players)}" class="empty-slot">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚾</div>
+            <h3>No Players Found</h3>
+            <p>You don't have any players matching the current filters, or your roster is empty.</p>
+            <p><a th:href="@{/auction/view}" style="color: #667eea; text-decoration: none;">Visit the auction to acquire players!</a></p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div style="background: #f8f9fa; border-radius: 10px; padding: 1.5rem; margin: 2rem 0; text-align: center;">
+            <h3 style="margin-top: 0; color: #333;">⚡ Quick Actions</h3>
+            <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                <a th:href="@{/team/export}" class="btn-primary" style="text-decoration: none;">📊 Export to Excel</a>
+                <a th:href="@{/team/import}" class="btn-primary" style="text-decoration: none;">📁 Import Players</a>
+                <form th:action="@{/team/clear-filters}" method="get" style="display: inline;">
+                    <button type="submit" class="btn-primary">🔄 Clear Filters</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        <a href="/players" class="button">Available Players</a>
+
+        <!-- Add New Player Form -->
+        <div class="form-section">
+            <h3>Add New Player</h3>
+            <form method="post" action="/team/add">
+                <div class="form-row">
+                    <label for="name">Player Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-row">
+                    <label for="position">Position:</label>
+                    <select id="position" name="position" required>
+                        <option value="">Select Position</option>
+                        <option value="C">Catcher (C)</option>
+                        <option value="1B">First Base (1B)</option>
+                        <option value="2B">Second Base (2B)</option>
+                        <option value="3B">Third Base (3B)</option>
+                        <option value="SS">Shortstop (SS)</option>
+                        <option value="OF">Outfield (OF)</option>
+                        <option value="DH">Designated Hitter (DH)</option>
+                        <option value="SP">Starting Pitcher (SP)</option>
+                        <option value="RP">Relief Pitcher (RP)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="team">MLB Team:</label>
+                    <input type="text" id="team" name="team" required>
+                </div>
+                <div class="form-row">
+                    <label for="salary">Salary (millions):</label>
+                    <input type="number" id="salary" name="salary" step="0.1" min="0">
+                </div>
+                <button type="submit" class="button">Add Player</button>
+            </form>
+        </div>
+
+        <!-- My Players Table -->
+        <div th:if="${players != null and !#lists.isEmpty(players)}">
+            <h3>My Current Players (<span th:text="${#lists.size(players)}">0</span>)</h3>
+            <table>
                 <thead>
                     <tr>
-                        <th style="width: 40px;">
-                            <input type="checkbox" id="selectAll" onchange="toggleAllPlayers(this)">
-                        </th>
                         <th>Name</th>
                         <th>Position</th>
                         <th>MLB Team</th>
-                        <th>Contract Length</th>
-                        <th>Contract Amount</th>
+                        <th>Salary</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr th:each="player : ${players}">
-                        <td>
-                            <input type="checkbox" name="selectedPlayers" th:value="${player.id}" 
-                                   onchange="updateReleaseButton()" class="player-checkbox">
-                        </td>
                         <td th:text="${player.name}">Player Name</td>
                         <td th:text="${player.position}">Position</td>
-                        <td th:text="${player.team}">MLB Team</td>
-                        <td th:text="${player.contractLength != null && player.contractLength > 0 ? player.contractLength + ' years' : 'None'}">Contract Length</td>
-                        <td th:text="${player.contractAmount != null && player.contractAmount > 0 ? '$' + #numbers.formatDecimal(player.contractAmount, 0, 2) : 'None'}">Contract Amount</td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(players)}">
-                        <td colspan="6" style="text-align: center; font-style: italic;">No players found with the current filters.</td>
+                        <td th:text="${player.team}">Team</td>
+                        <td>$<span th:text="${#numbers.formatDecimal(player.salary, 1, 2)}">0.00</span>M</td>
+                        <td>
+                            <form method="post" th:action="@{'/team/remove/' + ${player.id}}" style="display: inline;">
+                                <button type="submit" class="button remove" 
+                                        onclick="return confirm('Are you sure you want to remove this player?')">
+                                    Remove
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                 </tbody>
             </table>
-        </form>
-
-        <!-- Add Player Form -->
-        <div class="add-player-form">
-            <h3>Add New Player</h3>
-            <form th:action="@{/team/add-player}" method="post">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="name">Player Name:</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="playerPosition">Position:</label>
-                        <select id="playerPosition" name="position" required>
-                            <option value="C">Catcher (C)</option>
-                            <option value="1B">First Base (1B)</option>
-                            <option value="2B">Second Base (2B)</option>
-                            <option value="3B">Third Base (3B)</option>
-                            <option value="SS">Shortstop (SS)</option>
-                            <option value="OF">Outfield (OF)</option>
-                            <option value="DH">Designated Hitter (DH)</option>
-                            <option value="SP">Starting Pitcher (SP)</option>
-                            <option value="RP">Relief Pitcher (RP)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="playerTeam">MLB Team:</label>
-                        <select id="playerTeam" name="team" required>
-                            <option value="">Select a team</option>
-                            <option value="Arizona Diamondbacks">Arizona Diamondbacks</option>
-                            <option value="Atlanta Braves">Atlanta Braves</option>
-                            <option value="Baltimore Orioles">Baltimore Orioles</option>
-                            <option value="Boston Red Sox">Boston Red Sox</option>
-                            <option value="Chicago Cubs">Chicago Cubs</option>
-                            <option value="Chicago White Sox">Chicago White Sox</option>
-                            <option value="Cincinnati Reds">Cincinnati Reds</option>
-                            <option value="Cleveland Guardians">Cleveland Guardians</option>
-                            <option value="Colorado Rockies">Colorado Rockies</option>
-                            <option value="Detroit Tigers">Detroit Tigers</option>
-                            <option value="Houston Astros">Houston Astros</option>
-                            <option value="Kansas City Royals">Kansas City Royals</option>
-                            <option value="Los Angeles Angels">Los Angeles Angels</option>
-                            <option value="Los Angeles Dodgers">Los Angeles Dodgers</option>
-                            <option value="Miami Marlins">Miami Marlins</option>
-                            <option value="Milwaukee Brewers">Milwaukee Brewers</option>
-                            <option value="Minnesota Twins">Minnesota Twins</option>
-                            <option value="New York Mets">New York Mets</option>
-                            <option value="New York Yankees">New York Yankees</option>
-                            <option value="Oakland Athletics">Oakland Athletics</option>
-                            <option value="Philadelphia Phillies">Philadelphia Phillies</option>
-                            <option value="Pittsburgh Pirates">Pittsburgh Pirates</option>
-                            <option value="San Diego Padres">San Diego Padres</option>
-                            <option value="San Francisco Giants">San Francisco Giants</option>
-                            <option value="Seattle Mariners">Seattle Mariners</option>
-                            <option value="St. Louis Cardinals">St. Louis Cardinals</option>
-                            <option value="Tampa Bay Rays">Tampa Bay Rays</option>
-                            <option value="Texas Rangers">Texas Rangers</option>
-                            <option value="Toronto Blue Jays">Toronto Blue Jays</option>
-                            <option value="Washington Nationals">Washington Nationals</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="contractLength">Contract Length (Years) - Optional:</label>
-                        <input type="number" id="contractLength" name="contractLength" min="0" placeholder="0 for no contract">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="contractAmount">Contract Amount ($) - Optional:</label>
-                        <select id="contractAmount" name="contractAmount">
-                            <option value="">No contract (Free Agent)</option>
-                            <option value="250000">$0.25M</option>
-                            <option value="500000">$0.5M</option>
-                            <option value="750000">$0.75M</option>
-                            <option value="1000000">$1M</option>
-                            <option value="2000000">$2M</option>
-                            <option value="3000000">$3M</option>
-                            <option value="4000000">$4M</option>
-                            <option value="5000000">$5M</option>
-                            <option value="6000000">$6M</option>
-                            <option value="7000000">$7M</option>
-                            <option value="8000000">$8M</option>
-                            <option value="9000000">$9M</option>
-                            <option value="10000000">$10M</option>
-                            <option value="11000000">$11M</option>
-                            <option value="12000000">$12M</option>
-                            <option value="13000000">$13M</option>
-                            <option value="14000000">$14M</option>
-                            <option value="15000000">$15M</option>
-                            <option value="16000000">$16M</option>
-                            <option value="17000000">$17M</option>
-                            <option value="18000000">$18M</option>
-                            <option value="19000000">$19M</option>
-                            <option value="20000000">$20M</option>
-                            <option value="25000000">$25M</option>
-                            <option value="30000000">$30M</option>
-                            <option value="35000000">$35M</option>
-                            <option value="40000000">$40M</option>
-                            <option value="45000000">$45M</option>
-                            <option value="50000000">$50M</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" style="margin-top: 20px;">Add Player</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <!-- Bulk Import Players Form -->
-        <div class="bulk-import-form">
-            <h3>Bulk Import Players from Excel</h3>
-            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
-                Upload an Excel file (.xlsx or .xls) with player data. The file should have the following columns in order:<br>
-                <strong>Name | Position | MLB Team | Contract Length (years) | Contract Amount ($)</strong><br>
-                <em>Note: Contract Length and Contract Amount can be left blank for free agents.</em><br>
-                <a th:href="@{/team/download-template}" style="color: #007bff; text-decoration: none; font-weight: bold;">
-                    📄 Download Sample Template
-                </a>
-            </p>
             
-            <!-- Success/Error Messages -->
-            <div th:if="${success}" class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-                <span th:text="${success}"></span>
-            </div>
-            <div th:if="${error}" class="alert alert-error" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-                <span th:text="${error}"></span>
-            </div>
-            <div th:if="${warning}" class="alert alert-warning" style="background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
-                <span th:text="${warning}"></span>
-            </div>
-            
-            <form th:action="@{/team/bulk-import}" method="post" enctype="multipart/form-data" onsubmit="return validateFile()">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label id="file-label" for="file">Select Excel File:</label>
-                        <input type="file" id="file" name="file" accept=".xlsx,.xls" required 
-                               onchange="updateFileName()"
-                               style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <small style="display: block; color: #666; margin-top: 5px;">
-                            Maximum file size: 10MB. Supported formats: .xlsx, .xls
-                        </small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" id="import-button" 
-                                style="margin-top: 20px; background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
-                            Import Players
-                        </button>
-                    </div>
-                </div>
-            </form>
-            
-            <!-- Sample Excel Template -->
-            <div style="margin-top: 20px;">
-                <h4>Sample Excel Format:</h4>
-                <table style="border-collapse: collapse; margin-top: 10px; font-size: 0.9em;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa;">
-                            <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Position</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">MLB Team</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Contract Length</th>
-                            <th style="border: 1px solid #ddd; padding: 8px;">Contract Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">Mike Trout</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">OF</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">Los Angeles Angels</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">10</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">35000000</td>
-                        </tr>
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">John Doe</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">C</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">Boston Red Sox</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;"></td>
-                            <td style="border: 1px solid #ddd; padding: 8px;"></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                    <strong>Valid Positions:</strong> C, 1B, 2B, 3B, SS, OF, DH, SP, RP<br>
-                    <strong>Contract Amount:</strong> Enter as a number (e.g., 1000000 for $1M) or with dollar signs/commas (e.g., $1,000,000)
+            <div>
+                <p><strong>Total Salary:</strong> 
+                   $<span th:text="${#numbers.formatDecimal(#aggregates.sum(players.![salary]), 1, 2)}">0.00</span>M
                 </p>
             </div>
+        </div>
+
+        <div th:if="${players == null or #lists.isEmpty(players)}">
+            <p>You don't have any players yet. Add some players using the form above or claim some from the available players list.</p>
         </div>
     </div>
 </body>

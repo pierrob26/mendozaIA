@@ -24,7 +24,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests((authz) -> authz
-                .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/login", "/register", "/css/**", "/js/**", "/actuator/**").permitAll()
                 .requestMatchers("/auction/manage", "/auction/add-player", "/auction/remove-player/**", 
                                  "/auction/add-released-player", "/auction/reject-released-player",
                                  "/auction/toggle-auction-type").hasRole("COMMISSIONER")
@@ -38,23 +38,26 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout((logout) -> logout.permitAll());
+
         return http.build();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            UserAccount user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+            
+            return User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .roles(user.getRole())
+                .build();
+        };
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public UserDetailsService users() {
-        return username -> {
-            UserAccount ua = userRepo.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-            return User.withUsername(ua.getUsername())
-                .password(ua.getPassword())
-                .roles(ua.getRole())
-                .build();
-        };
     }
 }
