@@ -1,0 +1,263 @@
+======================================================================
+                    FANTASYIA PROJECT - CODE SOURCES DOCUMENTATION
+                           Created on: March 6, 2026
+======================================================================
+
+PROJECT OVERVIEW
+================
+FantasyIA is a Fantasy Baseball Dynasty League Management System developed as 
+an IB Computer Science Internal Assessment project. This document catalogs all 
+sources and origins of code used in this application.
+
+PROJECT METADATA
+================
+• Project Name: FantasyIA (mendozaIA)
+• Framework: Spring Boot 3.2.0
+• Language: Java 17
+• Database: PostgreSQL
+• Architecture: Model-View-Controller (MVC)
+• Build Tool: Maven
+• Containerization: Docker & Docker Compose
+
+======================================================================
+                            FRAMEWORK SOURCES
+======================================================================
+
+1. SPRING BOOT ECOSYSTEM
+   Source: https://spring.io/projects/spring-boot
+   Components Used:
+   • spring-boot-starter-parent (3.2.0) - Base parent POM
+   • spring-boot-starter-web - Web application framework
+   • spring-boot-starter-thymeleaf - Template engine integration
+   • spring-boot-starter-security - Authentication & authorization
+   • spring-boot-starter-data-jpa - ORM and database abstraction
+   • spring-boot-devtools - Development tools
+   • spring-boot-starter-test - Testing framework integration
+   License: Apache License 2.0
+
+2. DATABASE & PERSISTENCE
+   • PostgreSQL JDBC Driver (org.postgresql:postgresql)
+     Source: https://jdbc.postgresql.org/
+     License: BSD 2-Clause License
+   
+   • Hibernate ORM (via spring-boot-starter-data-jpa)
+     Source: https://hibernate.org/orm/
+     License: GNU Lesser General Public License
+
+3. EXCEL PROCESSING LIBRARIES
+   • Apache POI (poi:5.2.5, poi-ooxml:5.2.5)
+     Source: https://poi.apache.org/
+     Purpose: Excel file import/export functionality
+     License: Apache License 2.0
+
+4. TESTING FRAMEWORKS
+   • JUnit Jupiter (org.junit.jupiter:junit-jupiter)
+     Source: https://junit.org/junit5/
+     License: Eclipse Public License 2.0
+
+======================================================================
+                         ORIGINAL APPLICATION CODE
+======================================================================
+
+MAIN APPLICATION STRUCTURE
+==========================
+All core business logic and application-specific code written by project author:
+
+1. MAIN APPLICATION CLASS
+   • src/main/java/com/fantasyia/FantasyIaApplication.java
+   Purpose: Spring Boot application entry point
+   Features: @SpringBootApplication, @EnableScheduling
+
+2. ENTITY CLASSES (ORIGINAL BUSINESS LOGIC)
+   Package: com.fantasyia.team
+   • Player.java - Baseball player entity with contract management
+   • ReleasedPlayer.java - Released players awaiting approval
+   • PlayerRepository.java - JPA repository interface
+   • ReleasedPlayerRepository.java - JPA repository interface
+
+   Package: com.fantasyia.user
+   • UserAccount.java - User authentication & team management
+   • UserAccountRepository.java - JPA repository interface
+   • RegistrationController.java - User registration logic
+
+   Package: com.fantasyia.auction
+   • Auction.java - Auction container entity
+   • AuctionItem.java - Individual player auction items
+   • Bid.java - Bidding records
+   • PendingContract.java - Post-auction contract management
+   • AuctionRepository.java - JPA repository interface
+   • AuctionItemRepository.java - JPA repository interface
+   • BidRepository.java - JPA repository interface
+   • PendingContractRepository.java - JPA repository interface
+   • AuctionService.java - Core auction business logic
+   • AuctionController.java - Web controller for auction management
+   • AuctionScheduledTasks.java - Automated auction processing
+
+3. CONTROLLER CLASSES (ORIGINAL WEB LOGIC)
+   Package: com.fantasyia.controller
+   • HomeController.java - Main navigation controller
+   • CustomErrorController.java - Error handling
+   • RegisterController.java - Registration flow
+
+   Package: com.fantasyia.team
+   • TeamController.java - Team management interface
+
+4. CONFIGURATION CLASSES (ORIGINAL SETUP)
+   Package: com.fantasyia.config
+   • SecurityConfig.java - Security configuration with BCrypt
+   • DataInitializer.java - Database initialization logic
+
+5. TEST CLASSES (ORIGINAL TEST LOGIC)
+   • src/test/java/com/fantasyia/team/PlayerRepositoryTest.java
+
+======================================================================
+                           TEMPLATE & UI SOURCES
+======================================================================
+
+HTML TEMPLATES (ORIGINAL DESIGNS)
+=================================
+All templates written specifically for FantasyIA:
+• src/main/resources/templates/home.html - Main dashboard
+• src/main/resources/templates/team.html - Team management interface
+• src/main/resources/templates/login.html - Authentication page
+• src/main/resources/templates/register.html - User registration
+• src/main/resources/templates/auction-view.html - Auction participation
+• src/main/resources/templates/auction-view-new.html - Updated auction view
+• src/main/resources/templates/auction-manage.html - Auction management
+• src/main/resources/templates/auction-manage-new.html - Updated management
+• src/main/resources/templates/error.html - Error handling page
+
+STYLING & STATIC RESOURCES
+==========================
+• src/main/resources/static/css/style.css - Custom CSS styling
+  Note: All styling written specifically for this application
+
+======================================================================
+                         CONFIGURATION SOURCES
+======================================================================
+
+APPLICATION CONFIGURATION
+=========================
+• src/main/resources/application.properties
+  Contains original database and application configurations
+
+BUILD CONFIGURATION  
+==================
+• pom.xml - Maven build configuration (original)
+• Dockerfile - Container configuration (original)
+• docker-compose.yml - Multi-container setup (original)
+• fantasyIA.iml - IntelliJ IDEA module file
+
+DATABASE SCRIPTS
+===============
+• init-db.sql - Database schema initialization
+• create_dasgoat_user.sql - User creation script
+• update_existing_data.sql - Data migration script
+• update_salary_cap_to_125M.sql - Salary cap updates
+• query_users.sql - User query script
+
+======================================================================
+                        EXTERNAL TOOL SOURCES
+======================================================================
+
+DEVELOPMENT & DEPLOYMENT TOOLS
+=============================
+• Docker Engine - https://www.docker.com/
+• PostgreSQL Database - https://www.postgresql.org/
+• PgAdmin 4 - https://www.pgadmin.org/
+• Maven - https://maven.apache.org/
+• IntelliJ IDEA - https://www.jetbrains.com/idea/
+
+DEPLOYMENT SCRIPTS (ORIGINAL)
+============================
+All shell scripts are original creations for this project:
+• Various .sh files for build, deploy, and maintenance operations
+• Docker container management scripts
+• Database access and management scripts
+• Git workflow automation scripts
+
+======================================================================
+                        REFERENCE MATERIALS
+======================================================================
+
+SPRING BOOT DOCUMENTATION
+=========================
+• Official Spring Boot Reference Guide
+  URL: https://docs.spring.io/spring-boot/docs/current/reference/html/
+  Used for: Framework configuration, annotations, best practices
+
+• Spring Security Documentation
+  URL: https://docs.spring.io/spring-security/reference/
+  Used for: Authentication setup, BCrypt implementation
+
+• Spring Data JPA Documentation
+  URL: https://docs.spring.io/spring-data/jpa/docs/current/reference/html/
+  Used for: Repository interfaces, query methods
+
+THYMELEAF DOCUMENTATION
+======================
+• Thymeleaf Documentation
+  URL: https://www.thymeleaf.org/documentation.html
+  Used for: Template syntax, form handling, conditional rendering
+
+JPA & HIBERNATE RESOURCES
+=========================
+• Java Persistence API Specification
+• Hibernate ORM Documentation
+  URL: https://hibernate.org/orm/documentation/
+  Used for: Entity relationships, annotations
+
+======================================================================
+                           ATTRIBUTION NOTES
+======================================================================
+
+THIRD-PARTY DEPENDENCIES
+========================
+All third-party libraries are used under their respective open-source licenses:
+• Spring Framework: Apache License 2.0
+• PostgreSQL JDBC: BSD 2-Clause License  
+• Apache POI: Apache License 2.0
+• JUnit: Eclipse Public License 2.0
+
+ORIGINAL DEVELOPMENT
+===================
+All business logic, entity relationships, auction algorithms, salary cap 
+calculations, and fantasy baseball rules implementation are original work
+designed specifically for this FantasyIA application.
+
+The complex auction system with bid validation, time-based rules, contract
+management, and automated processing represents significant original 
+algorithmic development.
+
+======================================================================
+                            LICENSE COMPLIANCE
+======================================================================
+
+This project complies with all applicable open-source licenses. All third-party 
+components are used in accordance with their respective license terms. No 
+proprietary or copyrighted code has been used without proper attribution.
+
+======================================================================
+                            DEVELOPMENT NOTES
+======================================================================
+
+ARCHITECTURAL DECISIONS
+======================
+• MVC pattern chosen for separation of concerns
+• JPA/Hibernate selected for database abstraction
+• Thymeleaf chosen for server-side template rendering
+• Spring Security integrated for robust authentication
+• Docker containerization for deployment consistency
+
+BUSINESS LOGIC COMPLEXITY
+=========================
+The application implements sophisticated fantasy baseball rules including:
+• Dynamic salary cap management ($125M per team)
+• Complex auction timing rules (24hr vs 72hr periods)
+• Automated bid processing and contract management
+• Roster limit enforcement (40 major, 25 minor league)
+• Multi-year contract validation and buyout calculations
+
+======================================================================
+                              END OF DOCUMENT
+======================================================================

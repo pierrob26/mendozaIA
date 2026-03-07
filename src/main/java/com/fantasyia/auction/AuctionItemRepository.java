@@ -10,25 +10,25 @@ import java.util.List;
 
 @Repository
 public interface AuctionItemRepository extends JpaRepository<AuctionItem, Long> {
-    
+
     @Query("SELECT ai FROM AuctionItem ai WHERE ai.auctionId = :auctionId AND ai.status = :status")
     List<AuctionItem> findByAuctionIdAndStatus(@Param("auctionId") Long auctionId, @Param("status") String status);
-    
+
     List<AuctionItem> findByAuctionId(Long auctionId);
-    
+
     @Query("SELECT ai FROM AuctionItem ai WHERE ai.playerId = :playerId AND ai.status = :status")
     AuctionItem findByPlayerIdAndStatus(@Param("playerId") Long playerId, @Param("status") String status);
-    
+
     @Query("SELECT ai FROM AuctionItem ai WHERE ai.auctionId = :auctionId AND ai.status = 'ACTIVE' " +
-           "AND ai.firstBidTime IS NOT NULL AND ai.firstBidTime < :cutoffTime")
-    List<AuctionItem> findExpiredItems(@Param("auctionId") Long auctionId, 
-                                      @Param("cutoffTime") LocalDateTime cutoffTime);
-    
+            "AND ai.firstBidTime IS NOT NULL AND ai.firstBidTime < :cutoffTime")
+    List<AuctionItem> findExpiredItems(@Param("auctionId") Long auctionId,
+                                       @Param("cutoffTime") LocalDateTime cutoffTime);
+
     @Query("SELECT ai FROM AuctionItem ai WHERE ai.auctionId = :auctionId AND ai.status = 'ACTIVE' " +
-           "AND ai.firstBidTime IS NOT NULL")
+            "AND ai.firstBidTime IS NOT NULL")
     List<AuctionItem> findActiveItemsWithBids(@Param("auctionId") Long auctionId);
-    
+
     @Query("SELECT ai FROM AuctionItem ai WHERE ai.auctionId = :auctionId AND ai.status = 'ACTIVE' " +
-           "AND ai.firstBidTime IS NULL")
+            "AND ai.firstBidTime IS NULL")
     List<AuctionItem> findActiveItemsWithoutBids(@Param("auctionId") Long auctionId);
 }

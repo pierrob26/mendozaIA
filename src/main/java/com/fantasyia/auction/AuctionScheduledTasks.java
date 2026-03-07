@@ -12,7 +12,7 @@ public class AuctionScheduledTasks {
     private AuctionService auctionService;
 
 
-    @Scheduled(fixedRate = 3600000) // Run every hour (3600000 ms)
+    @Scheduled(fixedRate = 3600000)
     public void processExpiredContracts() {
         try {
             auctionService.processExpiredContracts();

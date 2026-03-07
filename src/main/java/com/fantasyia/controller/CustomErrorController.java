@@ -15,18 +15,18 @@ public class CustomErrorController implements ErrorController {
         Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         Object exception = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
         Object message = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
-        
+
         if (status != null) {
             Integer statusCode = Integer.valueOf(status.toString());
             model.addAttribute("statusCode", statusCode);
-            
+
             if (statusCode == 404) {
                 model.addAttribute("errorTitle", "Page Not Found");
                 model.addAttribute("errorMessage", "The page you are looking for does not exist.");
             } else if (statusCode == 500) {
                 model.addAttribute("errorTitle", "Internal Server Error");
                 model.addAttribute("errorMessage", "An unexpected error occurred. Please try again.");
-                
+
                 if (exception != null) {
                     System.err.println("=== 500 ERROR ===");
                     System.err.println("Exception: " + exception);
@@ -42,7 +42,7 @@ public class CustomErrorController implements ErrorController {
                 model.addAttribute("errorMessage", "An error occurred.");
             }
         }
-        
+
         return "error";
     }
 }

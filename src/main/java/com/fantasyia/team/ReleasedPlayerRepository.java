@@ -7,8 +7,8 @@ import java.util.List;
 
 @Repository
 public interface ReleasedPlayerRepository extends JpaRepository<ReleasedPlayer, Long> {
-    
+
     List<ReleasedPlayer> findByStatusOrderByReleasedAtDesc(String status);
-    
+
     Long countByStatus(String status);
 }

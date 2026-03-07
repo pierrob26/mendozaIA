@@ -83,8 +83,8 @@ public class PendingContract {
     public Double getBuyoutFee() { return buyoutFee; }
     public void setBuyoutFee(Double buyoutFee) { this.buyoutFee = buyoutFee; }
 
-    public Boolean getIsMinorLeaguer() { 
-        return isMinorLeaguer != null ? isMinorLeaguer : false; 
+    public Boolean getIsMinorLeaguer() {
+        return isMinorLeaguer != null ? isMinorLeaguer : false;
     }
     public void setIsMinorLeaguer(Boolean isMinorLeaguer) { this.isMinorLeaguer = isMinorLeaguer; }
 
@@ -94,11 +94,11 @@ public class PendingContract {
 
     public boolean isValidContractLength() {
         if (contractYears == null) return false;
-        
+
         if (winningBid < 0.75 && contractYears > 2) {
             return false;
         }
-        
+
         return contractYears >= 1 && contractYears <= 5;
     }
 }

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Available Players</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .button { background-color: #4CAF50; color: white; padding: 8px 16px; 
+                 text-decoration: none; border-radius: 4px; margin: 5px; border: none; cursor: pointer; }
+        .button.claim { background-color: #2196F3; }
+        .error { color: red; margin: 10px 0; }
+        .message { color: green; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input { padding: 5px; margin: 5px; }
+        .search-section { background-color: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Available Players</h1>
+
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <div th:if="${message}" class="message" th:text="${message}"></div>
+
+        <a href="/" class="button">Back to Home</a>
+        <a href="/team" class="button">My Team</a>
+
+        <!-- Search Form -->
+        <div class="search-section">
+            <h3>Search Players</h3>
+            <form method="get" action="/players">
+                <input type="text" name="search" placeholder="Search by player name..." 
+                       th:value="${param.search}" style="width: 300px;">
+                <button type="submit" class="button">Search</button>
+                <a href="/players" class="button" style="background-color: #6c757d;">Clear</a>
+            </form>
+        </div>
+
+        <!-- Available Players Table -->
+        <div th:if="${players != null and !#lists.isEmpty(players)}">
+            <h3>Available Players (<span th:text="${#lists.size(players)}">0</span>)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Position</th>
+                        <th>MLB Team</th>
+                        <th>Salary</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="player : ${players}">
+                        <td th:text="${player.name}">Player Name</td>
+                        <td th:text="${player.position}">Position</td>
+                        <td th:text="${player.team}">Team</td>
+                        <td>$<span th:text="${#numbers.formatDecimal(player.salary, 1, 2)}">0.00</span>M</td>
+                        <td>
+                            <form method="post" th:action="@{'/players/claim/' + ${player.id}}" style="display: inline;">
+                                <button type="submit" class="button claim" 
+                                        onclick="return confirm('Are you sure you want to claim this player?')">
+                                    Claim Player
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${players == null or #lists.isEmpty(players)}">
+            <p>No available players found. All players may already be owned or try a different search.</p>
+        </div>
+    </div>
+</body>
+</html>

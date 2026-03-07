@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Team</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .button { background-color: #4CAF50; color: white; padding: 8px 16px; 
+                 text-decoration: none; border-radius: 4px; margin: 5px; border: none; cursor: pointer; }
+        .button.remove { background-color: #f44336; }
+        .form-section { background-color: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .error { color: red; margin: 10px 0; }
+        .message { color: green; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input, select { padding: 5px; margin: 5px; }
+        .form-row { margin: 10px 0; }
+        label { display: inline-block; width: 120px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Team</h1>
+
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+        <div th:if="${message}" class="message" th:text="${message}"></div>
+
+        <a href="/" class="button">Back to Home</a>
+        <a href="/players" class="button">Available Players</a>
+
+        <!-- Add New Player Form -->
+        <div class="form-section">
+            <h3>Add New Player</h3>
+            <form method="post" action="/team/add">
+                <div class="form-row">
+                    <label for="name">Player Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-row">
+                    <label for="position">Position:</label>
+                    <select id="position" name="position" required>
+                        <option value="">Select Position</option>
+                        <option value="C">Catcher (C)</option>
+                        <option value="1B">First Base (1B)</option>
+                        <option value="2B">Second Base (2B)</option>
+                        <option value="3B">Third Base (3B)</option>
+                        <option value="SS">Shortstop (SS)</option>
+                        <option value="OF">Outfield (OF)</option>
+                        <option value="DH">Designated Hitter (DH)</option>
+                        <option value="SP">Starting Pitcher (SP)</option>
+                        <option value="RP">Relief Pitcher (RP)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="team">MLB Team:</label>
+                    <input type="text" id="team" name="team" required>
+                </div>
+                <div class="form-row">
+                    <label for="salary">Salary (millions):</label>
+                    <input type="number" id="salary" name="salary" step="0.1" min="0">
+                </div>
+                <button type="submit" class="button">Add Player</button>
+            </form>
+        </div>
+
+        <!-- My Players Table -->
+        <div th:if="${players != null and !#lists.isEmpty(players)}">
+            <h3>My Current Players (<span th:text="${#lists.size(players)}">0</span>)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Position</th>
+                        <th>MLB Team</th>
+                        <th>Salary</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="player : ${players}">
+                        <td th:text="${player.name}">Player Name</td>
+                        <td th:text="${player.position}">Position</td>
+                        <td th:text="${player.team}">Team</td>
+                        <td>$<span th:text="${#numbers.formatDecimal(player.salary, 1, 2)}">0.00</span>M</td>
+                        <td>
+                            <form method="post" th:action="@{'/team/remove/' + ${player.id}}" style="display: inline;">
+                                <button type="submit" class="button remove" 
+                                        onclick="return confirm('Are you sure you want to remove this player?')">
+                                    Remove
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div>
+                <p><strong>Total Salary:</strong> 
+                   $<span th:text="${#numbers.formatDecimal(#aggregates.sum(players.![salary]), 1, 2)}">0.00</span>M
+                </p>
+            </div>
+        </div>
+
+        <div th:if="${players == null or #lists.isEmpty(players)}">
+            <p>You don't have any players yet. Add some players using the form above or claim some from the available players list.</p>
+        </div>
+    </div>
+</body>
+</html>

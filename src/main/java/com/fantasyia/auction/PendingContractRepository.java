@@ -10,13 +10,13 @@ import java.util.List;
 
 @Repository
 public interface PendingContractRepository extends JpaRepository<PendingContract, Long> {
-    
+
     List<PendingContract> findByWinnerIdAndStatus(Long winnerId, String status);
-    
+
     List<PendingContract> findByStatus(String status);
-    
+
     @Query("SELECT p FROM PendingContract p WHERE p.status = 'PENDING' AND p.contractDeadline < :currentTime")
     List<PendingContract> findExpiredContracts(@Param("currentTime") LocalDateTime currentTime);
-    
+
     PendingContract findByAuctionItemIdAndStatus(Long auctionItemId, String status);
 }

@@ -1,7 +1,4 @@
-# Player Auction Page 500 Error - DIAGNOSIS & FIX
-
-## Problem
-Player auction page shows Internal Server Error 500
+DELETED_DURING_CLEANUP
 
 ## Root Cause
 The application is **crashing on startup** and never successfully starts. The error log shows:

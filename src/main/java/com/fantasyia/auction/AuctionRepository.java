@@ -9,19 +9,18 @@ import java.util.List;
 
 @Repository
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
-    
+
     List<Auction> findByCreatedBy(Long createdBy);
-    
-    // Legacy compatibility method
+
     default List<Auction> findByCreatedByCommissionerId(Long commissionerId) {
         return findByCreatedBy(commissionerId);
     }
-    
+
     List<Auction> findByStatus(String status);
-    
+
     @Query("SELECT a FROM Auction a WHERE a.status = 'ACTIVE' AND a.endTime > :currentTime")
     List<Auction> findActiveAuctions(LocalDateTime currentTime);
-    
+
     @Query("SELECT a FROM Auction a WHERE a.status = 'ACTIVE' AND a.endTime <= :currentTime")
     List<Auction> findExpiredAuctions(LocalDateTime currentTime);
 }

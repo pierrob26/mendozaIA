@@ -86,37 +86,36 @@ public class Player {
     public Long getOwnerId() { return ownerId; }
     public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
 
-    public Boolean getIsMinorLeaguer() { 
-        return isMinorLeaguer != null ? isMinorLeaguer : false; 
+    public Boolean getIsMinorLeaguer() {
+        return isMinorLeaguer != null ? isMinorLeaguer : false;
     }
     public void setIsMinorLeaguer(Boolean isMinorLeaguer) { this.isMinorLeaguer = isMinorLeaguer; }
 
-    public Boolean getIsRookie() { 
-        return isRookie != null ? isRookie : false; 
+    public Boolean getIsRookie() {
+        return isRookie != null ? isRookie : false;
     }
     public void setIsRookie(Boolean isRookie) { this.isRookie = isRookie; }
 
-    public Integer getAtBats() { 
-        return atBats != null ? atBats : 0; 
+    public Integer getAtBats() {
+        return atBats != null ? atBats : 0;
     }
     public void setAtBats(Integer atBats) { this.atBats = atBats; }
 
-    public Integer getInningsPitched() { 
-        return inningsPitched != null ? inningsPitched : 0; 
+    public Integer getInningsPitched() {
+        return inningsPitched != null ? inningsPitched : 0;
     }
     public void setInningsPitched(Integer inningsPitched) { this.inningsPitched = inningsPitched; }
 
-    public Boolean getIsOnFortyManRoster() { 
-        return isOnFortyManRoster != null ? isOnFortyManRoster : false; 
+    public Boolean getIsOnFortyManRoster() {
+        return isOnFortyManRoster != null ? isOnFortyManRoster : false;
     }
     public void setIsOnFortyManRoster(Boolean isOnFortyManRoster) { this.isOnFortyManRoster = isOnFortyManRoster; }
 
-    public Integer getContractYear() { 
-        return contractYear != null ? contractYear : 0; 
+    public Integer getContractYear() {
+        return contractYear != null ? contractYear : 0;
     }
     public void setContractYear(Integer contractYear) { this.contractYear = contractYear; }
 
-    // Helper methods
     public boolean hasEclipsedRookieStats() {
         return (atBats != null && atBats >= 130) || (inningsPitched != null && inningsPitched >= 50);
     }

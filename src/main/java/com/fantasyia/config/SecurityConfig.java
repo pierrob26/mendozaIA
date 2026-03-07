@@ -22,22 +22,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests((authz) -> authz
-                .requestMatchers("/login", "/register", "/css/**", "/js/**", "/actuator/**").permitAll()
-                .requestMatchers("/auction/manage", "/auction/add-player", "/auction/remove-player/**", 
-                                 "/auction/add-released-player", "/auction/reject-released-player",
-                                 "/auction/toggle-auction-type").hasRole("COMMISSIONER")
-                .requestMatchers("/auction/view", "/auction/place-bid", "/auction/post-contract", 
-                                 "/auction/buyout-player").authenticated()
-                .anyRequest().authenticated()
-            )
-            .formLogin((form) -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/", true)
-                .permitAll()
-            )
-            .logout((logout) -> logout.permitAll());
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests((authz) -> authz
+                        .requestMatchers("/login", "/register", "/css/**", "/js/**", "/actuator/**").permitAll()
+                        .requestMatchers("/auction/manage", "/auction/add-player", "/auction/remove-player/**",
+                                "/auction/add-released-player", "/auction/reject-released-player",
+                                "/auction/toggle-auction-type").hasRole("COMMISSIONER")
+                        .requestMatchers("/auction/view", "/auction/place-bid", "/auction/post-contract",
+                                "/auction/buyout-player").authenticated()
+                        .anyRequest().authenticated()
+                )
+                .formLogin((form) -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/", true)
+                        .permitAll()
+                )
+                .logout((logout) -> logout.permitAll());
 
         return http.build();
     }
@@ -46,13 +46,13 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         return username -> {
             UserAccount user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-            
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
             return User.builder()
-                .username(user.getUsername())
-                .password(user.getPassword())
-                .roles(user.getRole())
-                .build();
+                    .username(user.getUsername())
+                    .password(user.getPassword())
+                    .roles(user.getRole())
+                    .build();
         };
     }
 

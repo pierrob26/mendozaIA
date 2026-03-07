@@ -27,9 +27,9 @@ public class RegisterController {
 
     @PostMapping("/register")
     public String registerUser(@RequestParam String username,
-                              @RequestParam String password,
-                              @RequestParam String role,
-                              RedirectAttributes redirectAttributes) {
+                               @RequestParam String password,
+                               @RequestParam String role,
+                               RedirectAttributes redirectAttributes) {
         try {
             if (userAccountRepository.findByUsername(username).isPresent()) {
                 redirectAttributes.addFlashAttribute("error", "Username already exists");
@@ -45,7 +45,7 @@ public class RegisterController {
             newUser.setUsername(username);
             newUser.setPassword(passwordEncoder.encode(password));
             newUser.setRole(role);
-            
+
             newUser.setSalaryCap(125.0); // $125M default
             newUser.setCurrentSalaryUsed(0.0);
             newUser.setMajorLeagueRosterCount(0);

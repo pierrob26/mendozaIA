@@ -23,7 +23,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Create a test user for demonstration
         if (!userAccountRepository.existsByUsername("testuser")) {
             UserAccount testUser = new UserAccount();
             testUser.setUsername("testuser");
@@ -35,7 +34,6 @@ public class DataInitializer implements CommandLineRunner {
             testUser.setMinorLeagueRosterCount(0);
             userAccountRepository.save(testUser);
             
-            // Create sample players with complex constructor (name, position, team, contractLength, contractAmount, ownerId)
             Player[] samplePlayers = {
                 new Player("Mookie Betts", "OF", "LAD", 4, 146000000.0, testUser.getId()),
                 new Player("Ronald Acuña Jr.", "OF", "ATL", 8, 100000000.0, testUser.getId()),
@@ -53,7 +51,6 @@ public class DataInitializer implements CommandLineRunner {
                 playerRepository.save(player);
             }
             
-            // Create some free agents (no owner)
             Player[] freeAgents = {
                 new Player("Mike Trout", "OF", "LAA", 0, 0.0, null),
                 new Player("Aaron Judge", "OF", "NYY", 0, 0.0, null),

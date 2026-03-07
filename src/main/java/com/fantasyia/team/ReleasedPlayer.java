@@ -39,9 +39,9 @@ public class ReleasedPlayer {
         this.status = "PENDING";
     }
 
-    public ReleasedPlayer(String playerName, String position, String mlbTeam, 
-                         Integer previousContractLength, Double previousContractAmount, 
-                         Long previousOwnerId) {
+    public ReleasedPlayer(String playerName, String position, String mlbTeam,
+                          Integer previousContractLength, Double previousContractAmount,
+                          Long previousOwnerId) {
         this.playerName = playerName;
         this.position = position;
         this.mlbTeam = mlbTeam;
@@ -65,13 +65,13 @@ public class ReleasedPlayer {
     public void setMlbTeam(String mlbTeam) { this.mlbTeam = mlbTeam; }
 
     public Integer getPreviousContractLength() { return previousContractLength; }
-    public void setPreviousContractLength(Integer previousContractLength) { 
-        this.previousContractLength = previousContractLength; 
+    public void setPreviousContractLength(Integer previousContractLength) {
+        this.previousContractLength = previousContractLength;
     }
 
     public Double getPreviousContractAmount() { return previousContractAmount; }
-    public void setPreviousContractAmount(Double previousContractAmount) { 
-        this.previousContractAmount = previousContractAmount; 
+    public void setPreviousContractAmount(Double previousContractAmount) {
+        this.previousContractAmount = previousContractAmount;
     }
 
     public Long getPreviousOwnerId() { return previousOwnerId; }

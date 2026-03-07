@@ -42,15 +42,6 @@ public class Auction {
         this.isActive = true;
     }
 
-    public Auction(String name, String auctionType, Long createdBy) {
-        this.name = name;
-        this.auctionType = auctionType != null ? auctionType : "IN_SEASON";
-        this.createdBy = createdBy;
-        this.createdAt = LocalDateTime.now();
-        this.isActive = true;
-        this.status = "ACTIVE";
-    }
-
     public Auction(String name, LocalDateTime startTime, LocalDateTime endTime, Long createdBy, String description) {
         this.name = name;
         this.startTime = startTime;
@@ -73,7 +64,6 @@ public class Auction {
     public String getAuctionType() { return auctionType; }
     public void setAuctionType(String auctionType) { this.auctionType = auctionType; }
 
-    // Legacy compatibility methods
     public String getType() { return auctionType; }
     public void setType(String type) { this.auctionType = type; }
 
@@ -83,7 +73,6 @@ public class Auction {
     public Long getCreatedBy() { return createdBy; }
     public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
 
-    // Legacy compatibility methods
     public Long getCreatedByCommissionerId() { return createdBy; }
     public void setCreatedByCommissionerId(Long createdBy) { this.createdBy = createdBy; }
 

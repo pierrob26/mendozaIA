@@ -32,38 +32,72 @@ public class UserAccount {
     @Column
     private Integer minorLeagueRosterCount;
 
-    // Basic getters and setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-    public Double getSalaryCap() { 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public Double getSalaryCap() {
+
         return salaryCap != null ? salaryCap : 125.0;
     }
-    public void setSalaryCap(Double salaryCap) { this.salaryCap = salaryCap; }
 
-    public Double getCurrentSalaryUsed() { 
-        return currentSalaryUsed != null ? currentSalaryUsed : 0.0; 
+    public void setSalaryCap(Double salaryCap) {
+        this.salaryCap = salaryCap;
     }
-    public void setCurrentSalaryUsed(Double currentSalaryUsed) { this.currentSalaryUsed = currentSalaryUsed; }
 
-    public Integer getMajorLeagueRosterCount() { 
-        return majorLeagueRosterCount != null ? majorLeagueRosterCount : 0; 
-    }
-    public void setMajorLeagueRosterCount(Integer majorLeagueRosterCount) { this.majorLeagueRosterCount = majorLeagueRosterCount; }
+    public Double getCurrentSalaryUsed() {
 
-    public Integer getMinorLeagueRosterCount() { 
-        return minorLeagueRosterCount != null ? minorLeagueRosterCount : 0; 
+        return currentSalaryUsed != null ? currentSalaryUsed : 0.0;
     }
-    public void setMinorLeagueRosterCount(Integer minorLeagueRosterCount) { this.minorLeagueRosterCount = minorLeagueRosterCount; }
+
+    public void setCurrentSalaryUsed(Double currentSalaryUsed) {
+        this.currentSalaryUsed = currentSalaryUsed;
+    }
+
+    public Integer getMajorLeagueRosterCount() {
+
+        return majorLeagueRosterCount != null ? majorLeagueRosterCount : 0;
+    }
+
+    public void setMajorLeagueRosterCount(Integer majorLeagueRosterCount) {
+        this.majorLeagueRosterCount = majorLeagueRosterCount;
+    }
+
+    public Integer getMinorLeagueRosterCount() {
+        return minorLeagueRosterCount != null ? minorLeagueRosterCount : 0;
+    }
+
+    public void setMinorLeagueRosterCount(Integer minorLeagueRosterCount) {
+        this.minorLeagueRosterCount = minorLeagueRosterCount;
+    }
 
     public Double getAvailableCapSpace() {
         return getSalaryCap() - getCurrentSalaryUsed();
@@ -76,7 +110,8 @@ public class UserAccount {
     public boolean hasRosterSpace(boolean isMinorLeaguer) {
         if (isMinorLeaguer) {
             return getMinorLeagueRosterCount() < 25;
-        } else {
+        }
+        else {
             return getMajorLeagueRosterCount() < 40;
         }
     }

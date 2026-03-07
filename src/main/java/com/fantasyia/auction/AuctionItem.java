@@ -120,36 +120,36 @@ public class AuctionItem {
     public LocalDateTime getEndTime() { return endTime; }
     public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
 
-    public Boolean getIsMinorLeaguer() { 
-        return isMinorLeaguer != null ? isMinorLeaguer : false; 
+    public Boolean getIsMinorLeaguer() {
+        return isMinorLeaguer != null ? isMinorLeaguer : false;
     }
     public void setIsMinorLeaguer(Boolean isMinorLeaguer) { this.isMinorLeaguer = isMinorLeaguer; }
 
     public LocalDateTime getContractDeadline() { return contractDeadline; }
     public void setContractDeadline(LocalDateTime contractDeadline) { this.contractDeadline = contractDeadline; }
 
-    public Boolean getCanDeleteBid() { 
-        return canDeleteBid != null ? canDeleteBid : false; 
+    public Boolean getCanDeleteBid() {
+        return canDeleteBid != null ? canDeleteBid : false;
     }
     public void setCanDeleteBid(Boolean canDeleteBid) { this.canDeleteBid = canDeleteBid; }
 
     public LocalDateTime getRosterComplianceDeadline() { return rosterComplianceDeadline; }
-    public void setRosterComplianceDeadline(LocalDateTime rosterComplianceDeadline) { 
-        this.rosterComplianceDeadline = rosterComplianceDeadline; 
+    public void setRosterComplianceDeadline(LocalDateTime rosterComplianceDeadline) {
+        this.rosterComplianceDeadline = rosterComplianceDeadline;
     }
 
-    public Boolean getIsBuyoutDeadlinePassed() { 
-        return isBuyoutDeadlinePassed != null ? isBuyoutDeadlinePassed : false; 
+    public Boolean getIsBuyoutDeadlinePassed() {
+        return isBuyoutDeadlinePassed != null ? isBuyoutDeadlinePassed : false;
     }
-    public void setIsBuyoutDeadlinePassed(Boolean isBuyoutDeadlinePassed) { 
-        this.isBuyoutDeadlinePassed = isBuyoutDeadlinePassed; 
+    public void setIsBuyoutDeadlinePassed(Boolean isBuyoutDeadlinePassed) {
+        this.isBuyoutDeadlinePassed = isBuyoutDeadlinePassed;
     }
 
-    public Double getCurrentMinimumIncrement() { 
-        return currentMinimumIncrement != null ? currentMinimumIncrement : 0.0; 
+    public Double getCurrentMinimumIncrement() {
+        return currentMinimumIncrement != null ? currentMinimumIncrement : 0.0;
     }
-    public void setCurrentMinimumIncrement(Double currentMinimumIncrement) { 
-        this.currentMinimumIncrement = currentMinimumIncrement; 
+    public void setCurrentMinimumIncrement(Double currentMinimumIncrement) {
+        this.currentMinimumIncrement = currentMinimumIncrement;
     }
 
     public Double getMinimumBidIncrement(String auctionType) {
@@ -179,9 +179,9 @@ public class AuctionItem {
 
     public boolean hasMinimumTimeElapsed(String auctionType) {
         if (firstBidTime == null) return false;
-        
+
         long hoursElapsed = Duration.between(firstBidTime, LocalDateTime.now()).toHours();
-        
+
         if ("IN_SEASON".equals(auctionType)) {
             return hoursElapsed >= 24;
         } else {
@@ -199,10 +199,10 @@ public class AuctionItem {
 
     public long getTimeRemainingHours(String auctionType) {
         if (firstBidTime == null) return -1;
-        
+
         int requiredHours = "IN_SEASON".equals(auctionType) ? 24 : 72;
         LocalDateTime calculatedEndTime = firstBidTime.plusHours(requiredHours);
-        
+
         if (LocalDateTime.now().isAfter(calculatedEndTime)) return 0;
         return Duration.between(LocalDateTime.now(), calculatedEndTime).toHours();
     }
